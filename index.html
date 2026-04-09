@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Shot Quality Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0a12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/screens.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<div id="app">
+
+    <!-- ===== HOME SCREEN ===== -->
+    <div id="home-screen" class="screen active">
+        <div class="app-header">
+            <h1>Shot <span>Quality</span> Tracker</h1>
+            <div class="subtitle">Live game shot tracking &amp; analysis</div>
+        </div>
+        <div class="season-record-card">
+            <div class="label">Season Record</div>
+            <div class="record">
+                <span class="wins" id="season-wins">0</span><span class="sep">-</span><span class="losses" id="season-losses">0</span>
+            </div>
+            <div class="ppp" id="season-ppp">Season PPP: —</div>
+        </div>
+        <div class="home-menu">
+            <button class="menu-btn" id="btn-new-game">
+                <span class="icon">&#9658;</span>
+                <span class="btn-label">New Game<br><span class="btn-sub">Start tracking a live game</span></span>
+            </button>
+            <button class="menu-btn" id="btn-roster">
+                <span class="icon">&#9775;</span>
+                <span class="btn-label">Manage Roster<br><span class="btn-sub">Add or edit players</span></span>
+            </button>
+            <button class="menu-btn" id="btn-history">
+                <span class="icon">&#9776;</span>
+                <span class="btn-label">Game History<br><span class="btn-sub">View past games</span></span>
+            </button>
+            <button class="menu-btn" id="btn-season">
+                <span class="icon">&#9733;</span>
+                <span class="btn-label">Season Stats<br><span class="btn-sub">Aggregate analysis</span></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== ROSTER SCREEN ===== -->
+    <div id="roster-screen" class="screen">
+        <div class="top-bar">
+            <button class="back-btn" id="roster-back">&larr; Back</button>
+            <span class="title">Roster</span>
+            <span style="width:50px"></span>
+        </div>
+        <div class="roster-list" id="roster-list"></div>
+        <div class="add-player-bar">
+            <input type="text" id="roster-num-input" class="number-input" placeholder="#" maxlength="3" inputmode="numeric">
+            <input type="text" id="roster-name-input" placeholder="Player name">
+            <button class="btn btn-primary" id="roster-add-btn">Add</button>
+        </div>
+    </div>
+
+    <!-- ===== GAME SETUP SCREEN ===== -->
+    <div id="setup-screen" class="screen">
+        <div class="top-bar">
+            <button class="back-btn" id="setup-back">&larr; Back</button>
+            <span class="title">New Game</span>
+            <span style="width:50px"></span>
+        </div>
+        <div class="setup-form">
+            <div class="form-group">
+                <label>Opponent</label>
+                <input type="text" id="setup-opponent" placeholder="e.g. Millburn">
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="setup-date">
+            </div>
+            <div class="form-group">
+                <label>Location</label>
+                <div class="toggle-group">
+                    <button class="active">Home</button>
+                    <button>Away</button>
+                </div>
+            </div>
+            <div style="flex:1"></div>
+            <button class="btn btn-primary btn-block btn-lg" onclick="SQT.Game.startGame()">Start Game</button>
+        </div>
+    </div>
+
+    <!-- ===== TRACKING SCREEN ===== -->
+    <div id="tracking-screen" class="screen">
+        <div class="tracking-top">
+            <span class="game-info" id="tracking-game-info">vs Opponent</span>
+            <div class="quarter-selector">
+                <button class="active">Q1</button>
+                <button>Q2</button>
+                <button>Q3</button>
+                <button>Q4</button>
+                <button>OT</button>
+            </div>
+            <div class="mini-stats">
+                <span>Poss: <span class="stat-val" id="mini-poss">0</span></span>
+                <span>PPP: <span class="stat-val" id="mini-ppp">—</span></span>
+                <span>FG: <span class="stat-val" id="mini-fg">—</span></span>
+            </div>
+            <div class="tracking-actions">
+                <button id="tracking-dashboard-btn">Stats</button>
+                <button id="tracking-undo-btn">Undo</button>
+                <button id="tracking-end-btn">End</button>
+            </div>
+        </div>
+        <div class="tap-flow" id="tap-flow-area">
+            <!-- Dynamic content rendered by tracker.js -->
+        </div>
+    </div>
+
+    <!-- ===== DASHBOARD SCREEN ===== -->
+    <div id="dashboard-screen" class="screen">
+        <div class="top-bar">
+            <button class="back-btn" id="dashboard-back">&larr; Back</button>
+            <span class="title" id="dashboard-title">Dashboard</span>
+            <button class="action-btn" id="dashboard-export-btn">Export</button>
+        </div>
+        <div class="dashboard-tabs">
+            <button data-tab="player" class="active">By Player</button>
+            <button data-tab="type">By Type</button>
+            <button data-tab="quarter">By Quarter</button>
+            <button data-tab="grade">By Grade</button>
+        </div>
+        <div class="dashboard-content" id="dashboard-content"></div>
+    </div>
+
+    <!-- ===== POST-GAME SCREEN ===== -->
+    <div id="postgame-screen" class="screen">
+        <div class="top-bar">
+            <span style="width:50px"></span>
+            <span class="title">Game Over</span>
+            <span style="width:50px"></span>
+        </div>
+        <div class="post-game-form">
+            <div id="postgame-opponent" style="font-size:18px;color:var(--text-secondary);"></div>
+            <div class="score-entry">
+                <div class="score-team">
+                    <div class="team-label">Us</div>
+                    <input type="number" id="score-us" inputmode="numeric" placeholder="0">
+                </div>
+                <div class="vs">vs</div>
+                <div class="score-team">
+                    <div class="team-label">Them</div>
+                    <input type="number" id="score-them" inputmode="numeric" placeholder="0">
+                </div>
+            </div>
+            <button class="btn btn-primary btn-lg" onclick="SQT.Game.savePostGame()">Save Game</button>
+        </div>
+    </div>
+
+    <!-- ===== GAME HISTORY SCREEN ===== -->
+    <div id="history-screen" class="screen">
+        <div class="top-bar">
+            <button class="back-btn" id="history-back">&larr; Back</button>
+            <span class="title">Game History</span>
+            <span style="width:50px"></span>
+        </div>
+        <div class="history-list" id="history-list"></div>
+    </div>
+
+</div><!-- /app -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Scripts (order matters) -->
+<script src="js/storage.js"></script>
+<script src="js/roster.js"></script>
+<script src="js/game.js"></script>
+<script src="js/tracker.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+
+<!-- Export button binding -->
+<script>
+document.getElementById('dashboard-export-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    // Show export options
+    var menu = document.createElement('div');
+    menu.style.cssText = 'position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);';
+    menu.innerHTML = '<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:16px;width:260px;display:flex;flex-direction:column;gap:8px;">' +
+        '<div style="font-size:15px;font-weight:600;text-align:center;margin-bottom:4px;">Export Data</div>' +
+        '<button class="btn btn-block" id="export-csv">Export as CSV (Excel)</button>' +
+        '<button class="btn btn-block" id="export-json">Export as JSON</button>' +
+        '<button class="btn btn-block" id="export-cancel" style="color:var(--text-secondary);">Cancel</button>' +
+    '</div>';
+    document.body.appendChild(menu);
+
+    var game = SQT.Dashboard.game;
+    document.getElementById('export-csv').addEventListener('click', function() {
+        SQT.Export.exportCSV(game);
+        document.body.removeChild(menu);
+    });
+    document.getElementById('export-json').addEventListener('click', function() {
+        SQT.Export.exportJSON(game);
+        document.body.removeChild(menu);
+    });
+    document.getElementById('export-cancel').addEventListener('click', function() {
+        document.body.removeChild(menu);
+    });
+    menu.addEventListener('click', function(ev) {
+        if (ev.target === menu) document.body.removeChild(menu);
+    });
+});
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+}
+</script>
+</body>
+</html>

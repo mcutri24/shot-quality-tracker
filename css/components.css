@@ -1,0 +1,125 @@
+/* Shared components */
+
+/* Primary button */
+.btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+.btn:active { background: var(--bg-input); }
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+.btn-primary:active { background: var(--accent-hover); }
+.btn-danger {
+    background: var(--red-bg);
+    color: var(--red);
+    border-color: var(--red);
+}
+.btn-block {
+    width: 100%;
+    display: block;
+}
+.btn-lg {
+    padding: 16px 32px;
+    font-size: 17px;
+}
+
+/* Modal overlay */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.modal-overlay.visible {
+    display: flex;
+}
+.modal-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    width: 100%;
+    max-width: 340px;
+}
+.modal-box h3 {
+    font-size: 17px;
+    margin-bottom: 16px;
+}
+.modal-box input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text-primary);
+    font-size: 15px;
+    margin-bottom: 12px;
+}
+.modal-box input::placeholder { color: var(--text-muted); }
+.modal-box .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* Toast notification */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    color: var(--text-primary);
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+.toast.visible { opacity: 1; }
+
+/* Confirm dialog */
+.confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.confirm-overlay.visible { display: flex; }
+.confirm-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    width: 100%;
+    max-width: 300px;
+    text-align: center;
+}
+.confirm-box p {
+    margin-bottom: 16px;
+    font-size: 15px;
+}
+.confirm-box .confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}

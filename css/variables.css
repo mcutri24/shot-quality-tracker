@@ -1,0 +1,73 @@
+/* Dark theme variables and global resets */
+:root {
+    --bg-primary: #0a0a12;
+    --bg-secondary: #14141f;
+    --bg-card: #1a1a2e;
+    --bg-input: #1e1e30;
+    --border: #2a2a40;
+    --border-light: #3a3a55;
+    --text-primary: #e8e8f0;
+    --text-secondary: #9898b0;
+    --text-muted: #6a6a80;
+    --accent: #4a9eff;
+    --accent-hover: #3a8eef;
+    --green: #22c55e;
+    --green-bg: rgba(34, 197, 94, 0.15);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, 0.15);
+    --gold: #f59e0b;
+    --gold-bg: rgba(245, 158, 11, 0.15);
+    --silver: #94a3b8;
+    --silver-bg: rgba(148, 163, 184, 0.15);
+    --bronze: #d97706;
+    --bronze-bg: rgba(217, 119, 6, 0.15);
+    --orange: #f97316;
+    --purple: #a855f7;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+button {
+    font-family: inherit;
+    font-size: inherit;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+input {
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+    border: none;
+}
+
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+}
