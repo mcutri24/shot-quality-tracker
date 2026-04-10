@@ -97,10 +97,10 @@ SQT.Dashboard = {
         var fg3Pct = fg3a > 0 ? Math.round(fg3m / fg3a * 100) + '%' : '—';
         var ftPct = fta > 0 ? Math.round(ftm / fta * 100) + '%' : '—';
 
-        var summaryHtml = '<div class="summary-bar">' +
+        var summaryHtml = '<div class="summary-hero"><div class="val highlight">' + ppp + '</div><div class="lbl">PPP</div></div>' +
+            '<div class="summary-bar">' +
             '<div class="summary-stat"><div class="val">' + totalPoss + '</div><div class="lbl">Poss</div></div>' +
             '<div class="summary-stat"><div class="val">' + totalPts + '</div><div class="lbl">Points</div></div>' +
-            '<div class="summary-stat"><div class="val highlight">' + ppp + '</div><div class="lbl">PPP</div></div>' +
             '<div class="summary-stat"><div class="val">' + fgPct + '</div><div class="lbl">FG%</div></div>' +
             '<div class="summary-stat"><div class="val">' + fg3Pct + '</div><div class="lbl">3PT%</div></div>' +
             '<div class="summary-stat"><div class="val">' + ftPct + '</div><div class="lbl">FT%</div></div>' +
@@ -293,8 +293,11 @@ SQT.Dashboard = {
         overlay.innerHTML = html;
         document.body.appendChild(overlay);
 
-        document.getElementById('drill-close').addEventListener('click', function() {
-            document.body.removeChild(overlay);
+        var closeBtn = overlay.querySelector('.back-btn');
+        closeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
         });
     },
 
@@ -360,6 +363,67 @@ SQT.Dashboard = {
                 '<td class="num-col highlight">' + typePpp + '</td></tr>';
         }
         html += '</tbody></table>';
+
+        // Aggregated 5-category table
+        var cats = {
+            layups: { label: 'Layups', att: 0, made: 0, pts: 0 },
+            midrange: { label: 'Mid-Range', att: 0, made: 0, pts: 0 },
+            threes: { label: '3-Pointers', att: 0, made: 0, pts: 0 },
+            ft: { label: 'Free Throws', att: 0, made: 0, pts: 0, ftm: 0, fta: 0 },
+            to: { label: 'Turnovers', att: 0, made: 0, pts: 0 }
+        };
+        for (var ci = 0; ci < poss.length; ci++) {
+            var cp = poss[ci];
+            var cat = null;
+            if (cp.shotType === 'open_layup' || cp.shotType === 'contested_layup') cat = cats.layups;
+            else if (cp.shotType === 'open_mid' || cp.shotType === 'contested_mid') cat = cats.midrange;
+            else if (cp.shotType === 'open_3' || cp.shotType === 'contested_3') cat = cats.threes;
+            else if (cp.shotType === 'free_throws') cat = cats.ft;
+            else if (cp.shotType === 'turnover') cat = cats.to;
+            if (!cat) continue;
+            cat.att++;
+            cat.pts += cp.points || 0;
+            if (cp.shotType === 'free_throws') {
+                cat.ftm += cp.ftMade || 0;
+                cat.fta += cp.ftAttempts || 0;
+            } else if (cp.shotType !== 'turnover') {
+                if (cp.result === 'made') cat.made++;
+            }
+        }
+
+        html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
+        html += '<table class="stat-table"><thead><tr>' +
+            '<th>Category</th><th class="num-col">Att</th><th class="num-col">%Tot</th><th class="num-col">Made</th>' +
+            '<th class="num-col">FG%</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
+
+        var catOrder = ['layups', 'midrange', 'threes', 'ft', 'to'];
+        for (var co = 0; co < catOrder.length; co++) {
+            var ck = catOrder[co];
+            var cd = cats[ck];
+            if (cd.att === 0) continue;
+            var cPctTot = totalPoss > 0 ? Math.round(cd.att / totalPoss * 100) + '%' : '—';
+            var cFgPct, cMadeStr;
+            if (ck === 'ft') {
+                cMadeStr = cd.ftm + '/' + cd.fta;
+                cFgPct = cd.fta > 0 ? Math.round(cd.ftm / cd.fta * 100) + '%' : '—';
+            } else if (ck === 'to') {
+                cMadeStr = '—';
+                cFgPct = '—';
+            } else {
+                cMadeStr = cd.made.toString();
+                cFgPct = cd.att > 0 ? Math.round(cd.made / cd.att * 100) + '%' : '—';
+            }
+            var cPpp = cd.att > 0 ? (cd.pts / cd.att).toFixed(2) : '—';
+            html += '<tr><td>' + cd.label + '</td>' +
+                '<td class="num-col">' + cd.att + '</td>' +
+                '<td class="num-col">' + cPctTot + '</td>' +
+                '<td class="num-col">' + cMadeStr + '</td>' +
+                '<td class="num-col">' + cFgPct + '</td>' +
+                '<td class="num-col">' + cd.pts + '</td>' +
+                '<td class="num-col highlight">' + cPpp + '</td></tr>';
+        }
+        html += '</tbody></table>';
+
         return html;
     },
 
@@ -422,7 +486,11 @@ SQT.Dashboard = {
     },
 
     _byGrade: function(poss) {
-        var grades = { gold: { poss: 0, pts: 0, fgm: 0, fga: 0 }, silver: { poss: 0, pts: 0, fgm: 0, fga: 0 }, bronze: { poss: 0, pts: 0, fgm: 0, fga: 0 } };
+        var grades = {
+            gold: { poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0 },
+            silver: { poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0 },
+            bronze: { poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0 }
+        };
         var totalPoss = poss.length;
         for (var i = 0; i < poss.length; i++) {
             var p = poss[i];
@@ -430,15 +498,23 @@ SQT.Dashboard = {
             if (!g) continue;
             g.poss++;
             g.pts += p.points || 0;
-            if (p.shotType !== 'free_throws' && p.shotType !== 'turnover') {
+            if (p.shotType === 'free_throws') {
+                g.ftm += p.ftMade || 0;
+                g.fta += p.ftAttempts || 0;
+            } else if (p.shotType !== 'turnover') {
                 g.fga++;
                 if (p.result === 'made') g.fgm++;
+                if (p.shotType === 'open_3' || p.shotType === 'contested_3') {
+                    g.fg3a++;
+                    if (p.result === 'made') g.fg3m++;
+                }
             }
         }
 
-        var html = '<table class="stat-table"><thead><tr>' +
+        var html = '<div style="overflow-x:auto"><table class="stat-table"><thead><tr>' +
             '<th>Grade</th><th class="num-col">Poss</th><th class="num-col">%Tot</th><th class="num-col">FG</th>' +
-            '<th class="num-col">FG%</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
+            '<th class="num-col">FG%</th><th class="num-col">3P%</th><th class="num-col">FT%</th>' +
+            '<th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
         var order = ['gold', 'silver', 'bronze'];
         var labels = { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' };
         for (var gi = 0; gi < order.length; gi++) {
@@ -447,16 +523,20 @@ SQT.Dashboard = {
             var pctTot = totalPoss > 0 ? Math.round(d.poss / totalPoss * 100) + '%' : '—';
             var fg = d.fgm + '/' + d.fga;
             var fgPct = d.fga > 0 ? Math.round(d.fgm / d.fga * 100) + '%' : '—';
+            var g3Pct = d.fg3a > 0 ? Math.round(d.fg3m / d.fg3a * 100) + '%' : '—';
+            var gFtPct = d.fta > 0 ? Math.round(d.ftm / d.fta * 100) + '%' : '—';
             var gPpp = d.poss > 0 ? (d.pts / d.poss).toFixed(2) : '—';
             html += '<tr><td style="color:var(--' + key + ')">' + labels[key] + '</td>' +
                 '<td class="num-col">' + d.poss + '</td>' +
                 '<td class="num-col">' + pctTot + '</td>' +
                 '<td class="num-col">' + fg + '</td>' +
                 '<td class="num-col">' + fgPct + '</td>' +
+                '<td class="num-col">' + g3Pct + '</td>' +
+                '<td class="num-col">' + gFtPct + '</td>' +
                 '<td class="num-col">' + d.pts + '</td>' +
                 '<td class="num-col highlight">' + gPpp + '</td></tr>';
         }
-        html += '</tbody></table>';
+        html += '</tbody></table></div>';
         return html;
     }
 };

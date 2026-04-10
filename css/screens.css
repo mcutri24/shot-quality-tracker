@@ -747,9 +747,27 @@
 .stat-table .num-col { text-align: right; }
 .stat-table .highlight { color: var(--accent); font-weight: 600; }
 
+.summary-hero {
+    text-align: center;
+    margin-bottom: 10px;
+    padding: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+.summary-hero .val {
+    font-size: 36px;
+    font-weight: 800;
+}
+.summary-hero .lbl {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 .summary-bar {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 12px;
     flex-wrap: wrap;
 }
