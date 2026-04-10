@@ -53,11 +53,7 @@ SQT.Roster = {
             name: name
         });
 
-        // Sort by jersey number
-        this.players.sort(function(a, b) {
-            return parseInt(a.number) - parseInt(b.number);
-        });
-
+        // New players go to end (user controls order via move buttons)
         SQT.Storage.saveRoster(this.players);
         numInput.value = '';
         nameInput.value = '';
@@ -78,6 +74,16 @@ SQT.Roster = {
             SQT.Storage.saveRoster(this.players);
             this._render();
         }
+    },
+
+    _movePlayer: function(idx, direction) {
+        var newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= this.players.length) return;
+        var temp = this.players[idx];
+        this.players[idx] = this.players[newIdx];
+        this.players[newIdx] = temp;
+        SQT.Storage.saveRoster(this.players);
+        this._render();
     },
 
     deletePlayer: function(playerId) {
@@ -103,6 +109,8 @@ SQT.Roster = {
                     '<div class="player-number">#' + p.number + '</div>' +
                 '</div>' +
                 '<div class="roster-actions">' +
+                    '<button class="move-btn move-up" data-idx="' + i + '"' + (i === 0 ? ' disabled style="opacity:0.3"' : '') + '>&#9650;</button>' +
+                    '<button class="move-btn move-down" data-idx="' + i + '"' + (i === this.players.length - 1 ? ' disabled style="opacity:0.3"' : '') + '>&#9660;</button>' +
                     '<button class="edit-btn" data-id="' + p.id + '">&#9998;</button>' +
                     '<button class="delete-btn" data-id="' + p.id + '">&#10005;</button>' +
                 '</div>' +
@@ -110,10 +118,12 @@ SQT.Roster = {
         }
         list.innerHTML = html;
 
-        // Bind edit/delete
+        // Bind edit/delete/move
         var self = this;
         var editBtns = list.querySelectorAll('.edit-btn');
         var delBtns = list.querySelectorAll('.delete-btn');
+        var upBtns = list.querySelectorAll('.move-up');
+        var downBtns = list.querySelectorAll('.move-down');
         for (var e = 0; e < editBtns.length; e++) {
             editBtns[e].addEventListener('click', function() {
                 self.editPlayer(this.getAttribute('data-id'));
@@ -122,6 +132,18 @@ SQT.Roster = {
         for (var d = 0; d < delBtns.length; d++) {
             delBtns[d].addEventListener('click', function() {
                 self.deletePlayer(this.getAttribute('data-id'));
+            });
+        }
+        for (var u = 0; u < upBtns.length; u++) {
+            upBtns[u].addEventListener('click', function() {
+                var idx = parseInt(this.getAttribute('data-idx'));
+                self._movePlayer(idx, -1);
+            });
+        }
+        for (var dn = 0; dn < downBtns.length; dn++) {
+            downBtns[dn].addEventListener('click', function() {
+                var idx = parseInt(this.getAttribute('data-idx'));
+                self._movePlayer(idx, 1);
             });
         }
     },
