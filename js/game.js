@@ -117,9 +117,25 @@ SQT.Game = {
                     '<div class="game-score">' + score + '</div>' +
                     '<div class="game-ppp">PPP: ' + ppp + '</div>' +
                 '</div>' +
+                '<button class="history-delete-btn" data-id="' + g.id + '" style="background:none;color:var(--red);font-size:18px;padding:4px 8px;flex-shrink:0;">&#10005;</button>' +
             '</div>';
         }
         list.innerHTML = html;
+
+        // Bind delete buttons
+        var self = this;
+        var delBtns = list.querySelectorAll('.history-delete-btn');
+        for (var d = 0; d < delBtns.length; d++) {
+            delBtns[d].addEventListener('click', function(ev) {
+                ev.stopPropagation();
+                var gameId = this.getAttribute('data-id');
+                if (confirm('Delete this game? This cannot be undone.')) {
+                    SQT.Storage.deleteGame(gameId);
+                    self.renderHistory();
+                    SQT.App.toast('Game deleted');
+                }
+            });
+        }
 
         // Bind clicks to view game dashboard
         var items = list.querySelectorAll('.history-item');

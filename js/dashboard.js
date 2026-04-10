@@ -110,14 +110,24 @@ SQT.Dashboard = {
             var p = poss[i];
             var key = p.playerNumber;
             if (!players[key]) {
-                players[key] = { num: p.playerNumber, name: p.playerName, poss: 0, pts: 0, fgm: 0, fga: 0, gold: 0, silver: 0, bronze: 0 };
+                players[key] = { num: p.playerNumber, name: p.playerName, poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, to: 0, ftm: 0, fta: 0, gold: 0, silver: 0, bronze: 0 };
             }
             var pl = players[key];
             pl.poss++;
             pl.pts += p.points || 0;
-            if (p.shotType !== 'free_throws' && p.shotType !== 'turnover') {
+            if (p.shotType === 'turnover') {
+                pl.to++;
+            } else if (p.shotType === 'free_throws') {
+                pl.ftm += p.ftMade || 0;
+                pl.fta += p.ftAttempts || 0;
+            } else {
                 pl.fga++;
                 if (p.result === 'made') pl.fgm++;
+                // 3-pointers
+                if (p.shotType === 'open_3' || p.shotType === 'contested_3') {
+                    pl.fg3a++;
+                    if (p.result === 'made') pl.fg3m++;
+                }
             }
             if (p.grade === 'gold') pl.gold++;
             else if (p.grade === 'silver') pl.silver++;
@@ -127,23 +137,35 @@ SQT.Dashboard = {
         var rows = Object.keys(players).map(function(k) { return players[k]; });
         rows.sort(function(a, b) { return parseInt(a.num) - parseInt(b.num); });
 
-        var html = '<table class="stat-table"><thead><tr>' +
-            '<th>Player</th><th class="num-col">Poss</th><th class="num-col">FG</th><th class="num-col">FG%</th>' +
-            '<th class="num-col">PTS</th><th class="num-col">PPP</th><th class="num-col">G/S/B</th></tr></thead><tbody>';
+        var html = '<div style="overflow-x:auto"><table class="stat-table"><thead><tr>' +
+            '<th>Player</th><th class="num-col">Poss</th><th class="num-col">PTS</th><th class="num-col">PPP</th>' +
+            '<th class="num-col">FG</th><th class="num-col">FG%</th>' +
+            '<th class="num-col">3PT</th><th class="num-col">3P%</th>' +
+            '<th class="num-col">FT</th><th class="num-col">FT%</th>' +
+            '<th class="num-col">TO</th><th class="num-col">G/S/B</th></tr></thead><tbody>';
         for (var r = 0; r < rows.length; r++) {
             var d = rows[r];
             var fg = d.fgm + '/' + d.fga;
             var fgPct = d.fga > 0 ? Math.round(d.fgm / d.fga * 100) + '%' : '—';
+            var fg3 = d.fg3m + '/' + d.fg3a;
+            var fg3Pct = d.fg3a > 0 ? Math.round(d.fg3m / d.fg3a * 100) + '%' : '—';
+            var ft = d.ftm + '/' + d.fta;
+            var ftPct = d.fta > 0 ? Math.round(d.ftm / d.fta * 100) + '%' : '—';
             var playerPpp = d.poss > 0 ? (d.pts / d.poss).toFixed(2) : '—';
             html += '<tr><td>#' + d.num + ' ' + d.name + '</td>' +
                 '<td class="num-col">' + d.poss + '</td>' +
-                '<td class="num-col">' + fg + '</td>' +
-                '<td class="num-col">' + fgPct + '</td>' +
                 '<td class="num-col">' + d.pts + '</td>' +
                 '<td class="num-col highlight">' + playerPpp + '</td>' +
+                '<td class="num-col">' + fg + '</td>' +
+                '<td class="num-col">' + fgPct + '</td>' +
+                '<td class="num-col">' + fg3 + '</td>' +
+                '<td class="num-col">' + fg3Pct + '</td>' +
+                '<td class="num-col">' + ft + '</td>' +
+                '<td class="num-col">' + ftPct + '</td>' +
+                '<td class="num-col">' + d.to + '</td>' +
                 '<td class="num-col">' + d.gold + '/' + d.silver + '/' + d.bronze + '</td></tr>';
         }
-        html += '</tbody></table>';
+        html += '</tbody></table></div>';
         return html;
     },
 

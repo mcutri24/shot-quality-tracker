@@ -56,6 +56,11 @@ SQT.Tracker = {
             self._undo();
         });
 
+        // Play List button
+        document.getElementById('tracking-playlist-btn').addEventListener('click', function() {
+            self._showPlayList();
+        });
+
         // End game button
         document.getElementById('tracking-end-btn').addEventListener('click', function() {
             if (confirm('End this game?')) {
@@ -87,6 +92,7 @@ SQT.Tracker = {
         var fgPct = fga > 0 ? Math.round(fgm / fga * 100) + '%' : '—';
 
         document.getElementById('mini-poss').textContent = total;
+        document.getElementById('mini-pts').textContent = pts;
         document.getElementById('mini-ppp').textContent = ppp;
         document.getElementById('mini-fg').textContent = fgPct;
     },
@@ -307,6 +313,179 @@ SQT.Tracker = {
             this._updateMiniStats();
             SQT.App.toast('Last possession undone');
         }
+    },
+
+    // ---- Play List ----
+    _showPlayList: function() {
+        var self = this;
+        var poss = this.game.possessions;
+
+        var overlay = document.createElement('div');
+        overlay.className = 'playlist-overlay';
+
+        var html = '<div class="top-bar">' +
+            '<button class="back-btn" id="playlist-close">&larr; Back</button>' +
+            '<span class="title">Play List (' + poss.length + ')</span>' +
+            '<span style="width:50px"></span></div>';
+        html += '<div class="playlist-items">';
+
+        if (poss.length === 0) {
+            html += '<div class="roster-empty">No possessions logged yet.</div>';
+        } else {
+            for (var i = poss.length - 1; i >= 0; i--) {
+                var p = poss[i];
+                var shotLabel = self._shotLabel(p.shotType);
+                var resultText, resultClass;
+                if (p.shotType === 'turnover') {
+                    resultText = 'TO';
+                    resultClass = 'missed';
+                } else if (p.shotType === 'free_throws') {
+                    resultText = p.ftMade + '/' + p.ftAttempts + ' FT';
+                    resultClass = p.ftMade > 0 ? 'made' : 'missed';
+                } else {
+                    resultText = p.result === 'made' ? 'Made' : 'Miss';
+                    resultClass = p.result;
+                }
+                var gradeLabel = p.grade ? p.grade.charAt(0).toUpperCase() + p.grade.slice(1) : '';
+
+                html += '<div class="playlist-item" data-idx="' + i + '">' +
+                    '<div class="pl-num">' + (i + 1) + '</div>' +
+                    '<div class="pl-detail">' +
+                        '<span class="pl-player">#' + p.playerNumber + '</span> ' +
+                        '<span class="pl-shot">' + shotLabel + '</span>' +
+                        '<div style="font-size:11px;color:var(--text-muted);">' + p.quarter + '</div>' +
+                    '</div>' +
+                    '<span class="pl-result ' + resultClass + '">' + resultText + '</span>' +
+                    '<span class="pl-grade ' + (p.grade || '') + '">' + gradeLabel + '</span>' +
+                    '<button class="pl-edit" data-idx="' + i + '">Edit</button>' +
+                '</div>';
+            }
+        }
+        html += '</div>';
+        overlay.innerHTML = html;
+        document.body.appendChild(overlay);
+
+        document.getElementById('playlist-close').addEventListener('click', function() {
+            document.body.removeChild(overlay);
+        });
+
+        var editBtns = overlay.querySelectorAll('.pl-edit');
+        for (var e = 0; e < editBtns.length; e++) {
+            editBtns[e].addEventListener('click', function(ev) {
+                ev.stopPropagation();
+                var idx = parseInt(this.getAttribute('data-idx'));
+                document.body.removeChild(overlay);
+                self._editPossession(idx);
+            });
+        }
+    },
+
+    _editPossession: function(idx) {
+        var self = this;
+        var p = this.game.possessions[idx];
+        if (!p) return;
+
+        var overlay = document.createElement('div');
+        overlay.className = 'edit-poss-overlay';
+
+        var shotOptions = '';
+        for (var i = 0; i < this.SHOT_TYPES.length; i++) {
+            var s = this.SHOT_TYPES[i];
+            var sel = (s.id === p.shotType) ? ' selected' : '';
+            shotOptions += '<option value="' + s.id + '"' + sel + '>' + s.label + '</option>';
+        }
+
+        var resultOptions = '<option value="made"' + (p.result === 'made' ? ' selected' : '') + '>Made</option>' +
+            '<option value="missed"' + (p.result === 'missed' ? ' selected' : '') + '>Missed</option>';
+
+        var gradeOptions = '<option value="gold"' + (p.grade === 'gold' ? ' selected' : '') + '>Gold</option>' +
+            '<option value="silver"' + (p.grade === 'silver' ? ' selected' : '') + '>Silver</option>' +
+            '<option value="bronze"' + (p.grade === 'bronze' ? ' selected' : '') + '>Bronze</option>';
+
+        var playerOptions = '';
+        var roster = SQT.Roster.players;
+        for (var r = 0; r < roster.length; r++) {
+            var pl = roster[r];
+            var sel2 = (pl.id === p.playerId) ? ' selected' : '';
+            playerOptions += '<option value="' + pl.id + '"' + sel2 + '>#' + pl.number + ' ' + this._esc(pl.name) + '</option>';
+        }
+
+        overlay.innerHTML = '<div class="edit-poss-box">' +
+            '<h3>Edit Possession #' + (idx + 1) + '</h3>' +
+            '<div class="edit-field"><label>Player</label><select id="edit-player">' + playerOptions + '</select></div>' +
+            '<div class="edit-field"><label>Shot Type</label><select id="edit-shot">' + shotOptions + '</select></div>' +
+            '<div class="edit-field"><label>Result</label><select id="edit-result">' + resultOptions + '</select></div>' +
+            '<div class="edit-field"><label>Grade</label><select id="edit-grade">' + gradeOptions + '</select></div>' +
+            '<div class="edit-poss-actions">' +
+                '<button class="btn" id="edit-cancel">Cancel</button>' +
+                '<button class="btn btn-danger" id="edit-delete">Delete</button>' +
+                '<button class="btn btn-primary" id="edit-save">Save</button>' +
+            '</div></div>';
+
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('click', function(ev) {
+            if (ev.target === overlay) document.body.removeChild(overlay);
+        });
+        document.getElementById('edit-cancel').addEventListener('click', function() {
+            document.body.removeChild(overlay);
+            self._showPlayList();
+        });
+        document.getElementById('edit-delete').addEventListener('click', function() {
+            self.game.possessions.splice(idx, 1);
+            SQT.Storage.saveGame(self.game);
+            self._updateMiniStats();
+            document.body.removeChild(overlay);
+            SQT.App.toast('Possession deleted');
+            self._showPlayList();
+        });
+        document.getElementById('edit-save').addEventListener('click', function() {
+            var selPlayer = document.getElementById('edit-player');
+            var playerId = selPlayer.value;
+            var playerOpt = selPlayer.options[selPlayer.selectedIndex].text;
+            var numMatch = playerOpt.match(/#(\d+)\s+(.*)/);
+
+            p.playerId = playerId;
+            if (numMatch) {
+                p.playerNumber = numMatch[1];
+                p.playerName = numMatch[2];
+            }
+
+            var newShot = document.getElementById('edit-shot').value;
+            p.shotType = newShot;
+            p.result = document.getElementById('edit-result').value;
+            p.grade = document.getElementById('edit-grade').value;
+
+            // Recalculate points
+            if (newShot === 'turnover') {
+                p.result = 'missed';
+                p.points = 0;
+            } else if (newShot === 'free_throws') {
+                p.points = p.ftMade || 0;
+            } else {
+                var shotDef = null;
+                for (var s = 0; s < self.SHOT_TYPES.length; s++) {
+                    if (self.SHOT_TYPES[s].id === newShot) { shotDef = self.SHOT_TYPES[s]; break; }
+                }
+                p.points = (p.result === 'made' && shotDef) ? shotDef.points : 0;
+            }
+
+            SQT.Storage.saveGame(self.game);
+            self._updateMiniStats();
+            document.body.removeChild(overlay);
+            SQT.App.toast('Possession updated');
+            self._showPlayList();
+        });
+    },
+
+    _shotLabel: function(type) {
+        var map = {
+            'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
+            'open_mid': 'Open Mid', 'contested_mid': 'Contested Mid',
+            'open_3': 'Open 3', 'contested_3': 'Contested 3',
+            'free_throws': 'Free Throws', 'turnover': 'Turnover'
+        };
+        return map[type] || type;
     },
 
     _esc: function(str) {
