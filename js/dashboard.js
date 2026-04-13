@@ -8,19 +8,29 @@ SQT.Dashboard = {
     possessions: [],
     isLive: false,   // true if came from tracking screen
     currentTab: 'player',
+    viewingSeasonId: null, // track which season we're viewing
 
     showGame: function(game, fromTracking) {
         this.game = game;
         this.possessions = game.possessions || [];
         this.isLive = !!fromTracking;
+        this.viewingSeasonId = null;
         this._renderDashboard();
     },
 
-    showSeason: function() {
+    showSeason: function(seasonId) {
         this.game = null;
         this.isLive = false;
-        // Aggregate all possessions from all games
-        var games = SQT.Storage.getGames();
+
+        var sid = seasonId;
+        if (!sid) {
+            var active = SQT.Storage.getActiveSeason();
+            sid = active ? active.id : null;
+        }
+        this.viewingSeasonId = sid;
+
+        // Aggregate possessions from season's games
+        var games = sid ? SQT.Storage.getGamesBySeason(sid) : [];
         var all = [];
         for (var i = 0; i < games.length; i++) {
             if (games[i].possessions) {
@@ -33,7 +43,22 @@ SQT.Dashboard = {
 
     _renderDashboard: function() {
         // Top bar
-        var title = this.game ? (this.game.opponent + ' — Dashboard') : 'Season Stats';
+        var title;
+        if (this.game) {
+            title = this.game.opponent + ' — Dashboard';
+        } else if (this.viewingSeasonId) {
+            var seasons = SQT.Storage.getSeasons();
+            var sName = 'Season Stats';
+            for (var i = 0; i < seasons.length; i++) {
+                if (seasons[i].id === this.viewingSeasonId) {
+                    sName = seasons[i].name;
+                    break;
+                }
+            }
+            title = sName;
+        } else {
+            title = 'Season Stats';
+        }
         document.getElementById('dashboard-title').textContent = title;
 
         // Back button behavior
@@ -277,6 +302,66 @@ SQT.Dashboard = {
                 '<td class="num-col highlight">' + typePpp + '</td></tr>';
         }
         html += '</tbody></table></div>';
+
+        // Aggregated by category table
+        var cats = {
+            layups: { label: 'Layups', att: 0, made: 0, pts: 0 },
+            midrange: { label: 'Mid-Range', att: 0, made: 0, pts: 0 },
+            threes: { label: '3-Pointers', att: 0, made: 0, pts: 0 },
+            ft: { label: 'Free Throws', att: 0, made: 0, pts: 0, ftm: 0, fta: 0 },
+            to: { label: 'Turnovers', att: 0, made: 0, pts: 0 }
+        };
+        for (var ci = 0; ci < playerPoss.length; ci++) {
+            var cp = playerPoss[ci];
+            var cat = null;
+            if (cp.shotType === 'open_layup' || cp.shotType === 'contested_layup') cat = cats.layups;
+            else if (cp.shotType === 'open_mid' || cp.shotType === 'contested_mid') cat = cats.midrange;
+            else if (cp.shotType === 'open_3' || cp.shotType === 'contested_3') cat = cats.threes;
+            else if (cp.shotType === 'free_throws') cat = cats.ft;
+            else if (cp.shotType === 'turnover') cat = cats.to;
+            if (!cat) continue;
+            cat.att++;
+            cat.pts += cp.points || 0;
+            if (cp.shotType === 'free_throws') {
+                cat.ftm += cp.ftMade || 0;
+                cat.fta += cp.ftAttempts || 0;
+            } else if (cp.shotType !== 'turnover') {
+                if (cp.result === 'made') cat.made++;
+            }
+        }
+
+        html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
+        html += '<table class="stat-table"><thead><tr>' +
+            '<th>Category</th><th class="num-col">Att</th><th class="num-col">%Tot</th><th class="num-col">Made</th>' +
+            '<th class="num-col">FG%</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
+
+        var catOrder = ['layups', 'midrange', 'threes', 'ft', 'to'];
+        for (var co = 0; co < catOrder.length; co++) {
+            var ck = catOrder[co];
+            var cd = cats[ck];
+            if (cd.att === 0) continue;
+            var cPctTot = totalPoss > 0 ? Math.round(cd.att / totalPoss * 100) + '%' : '—';
+            var cFgPct, cMadeStr;
+            if (ck === 'ft') {
+                cMadeStr = cd.ftm + '/' + cd.fta;
+                cFgPct = cd.fta > 0 ? Math.round(cd.ftm / cd.fta * 100) + '%' : '—';
+            } else if (ck === 'to') {
+                cMadeStr = '—';
+                cFgPct = '—';
+            } else {
+                cMadeStr = cd.made.toString();
+                cFgPct = cd.att > 0 ? Math.round(cd.made / cd.att * 100) + '%' : '—';
+            }
+            var cPpp = cd.att > 0 ? (cd.pts / cd.att).toFixed(2) : '—';
+            html += '<tr><td>' + cd.label + '</td>' +
+                '<td class="num-col">' + cd.att + '</td>' +
+                '<td class="num-col">' + cPctTot + '</td>' +
+                '<td class="num-col">' + cMadeStr + '</td>' +
+                '<td class="num-col">' + cFgPct + '</td>' +
+                '<td class="num-col">' + cd.pts + '</td>' +
+                '<td class="num-col highlight">' + cPpp + '</td></tr>';
+        }
+        html += '</tbody></table>';
 
         // Grade breakdown
         var grades = { gold: 0, silver: 0, bronze: 0 };

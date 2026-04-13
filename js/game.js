@@ -26,12 +26,20 @@ SQT.Game = {
             SQT.App.toast('Enter opponent name');
             return;
         }
+
+        var active = SQT.Storage.getActiveSeason();
+        if (!active) {
+            SQT.App.toast('Create a season first');
+            return;
+        }
+
         var date = document.getElementById('setup-date').value;
         var locationBtn = document.querySelector('#setup-screen .toggle-group button.active');
         var location = locationBtn ? locationBtn.textContent.trim() : 'Home';
 
         var game = {
             id: SQT.Storage.uuid(),
+            seasonId: active.id,
             opponent: opponent,
             date: date,
             location: location,
@@ -57,6 +65,9 @@ SQT.Game = {
         var game = SQT.App.currentGame;
         if (game) {
             document.getElementById('postgame-opponent').textContent = 'vs ' + game.opponent;
+            // Update labels: NA vs Opponent
+            document.getElementById('postgame-us-label').textContent = 'NA';
+            document.getElementById('postgame-them-label').textContent = game.opponent;
         }
     },
 
@@ -74,13 +85,23 @@ SQT.Game = {
         SQT.Storage.saveGame(game);
         SQT.App.currentGame = null;
 
+        // Reset score inputs
+        document.getElementById('score-us').value = '';
+        document.getElementById('score-them').value = '';
+
         SQT.App.showScreen('home');
         SQT.App._updateSeasonRecord();
         SQT.App.toast('Game saved!');
     },
 
-    renderHistory: function() {
-        var games = SQT.Storage.getGames();
+    // seasonId param: if provided, show that season's games; otherwise active season
+    renderHistory: function(seasonId) {
+        var sid = seasonId;
+        if (!sid) {
+            var active = SQT.Storage.getActiveSeason();
+            sid = active ? active.id : null;
+        }
+        var games = sid ? SQT.Storage.getGamesBySeason(sid) : [];
         var list = document.getElementById('history-list');
 
         // Sort newest first
@@ -131,7 +152,7 @@ SQT.Game = {
                 var gameId = this.getAttribute('data-id');
                 if (confirm('Delete this game? This cannot be undone.')) {
                     SQT.Storage.deleteGame(gameId);
-                    self.renderHistory();
+                    self.renderHistory(sid);
                     SQT.App.toast('Game deleted');
                 }
             });
