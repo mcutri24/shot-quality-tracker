@@ -1,11 +1,11 @@
 {
-    "name": "Shot Quality Tracker",
-    "short_name": "ShotTracker",
-    "description": "Live game shot quality tracking & analysis",
+    "name": "NA Shot Quality Tracker",
+    "short_name": "NA Tracker",
+    "description": "Newark Academy Minutemen — Shot quality tracking & analysis",
     "start_url": "./index.html",
     "display": "standalone",
-    "background_color": "#0a0a12",
-    "theme_color": "#0a0a12",
+    "background_color": "#0c0c0e",
+    "theme_color": "#c41230",
     "orientation": "portrait",
     "icons": [
         {

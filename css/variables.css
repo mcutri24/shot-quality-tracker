@@ -1,16 +1,18 @@
 /* Dark theme variables and global resets */
 :root {
-    --bg-primary: #0a0a12;
-    --bg-secondary: #14141f;
-    --bg-card: #1a1a2e;
-    --bg-input: #1e1e30;
-    --border: #2a2a40;
-    --border-light: #3a3a55;
-    --text-primary: #e8e8f0;
-    --text-secondary: #9898b0;
-    --text-muted: #6a6a80;
-    --accent: #4a9eff;
-    --accent-hover: #3a8eef;
+    /* Newark Academy Minutemen — Crimson, Black & White */
+    --bg-primary: #0c0c0e;
+    --bg-secondary: #151517;
+    --bg-card: #1c1c20;
+    --bg-input: #222228;
+    --border: #2e2e36;
+    --border-light: #3e3e48;
+    --text-primary: #f2f2f4;
+    --text-secondary: #a0a0aa;
+    --text-muted: #6a6a74;
+    --accent: #c41230;
+    --accent-hover: #a80e28;
+    --accent-bg: rgba(196, 18, 48, 0.15);
     --green: #22c55e;
     --green-bg: rgba(34, 197, 94, 0.15);
     --red: #ef4444;
