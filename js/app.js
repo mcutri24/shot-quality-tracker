@@ -28,6 +28,12 @@ SQT.App = {
 
     // ---- Screen Navigation ----
     showScreen: function(screenId) {
+        // Clean up any stale overlays that might block UI
+        var overlays = document.querySelectorAll('.player-drill-overlay, .playlist-overlay, .edit-poss-overlay');
+        for (var o = 0; o < overlays.length; o++) {
+            if (overlays[o].parentNode) overlays[o].parentNode.removeChild(overlays[o]);
+        }
+
         var screens = document.querySelectorAll('.screen');
         for (var i = 0; i < screens.length; i++) {
             screens[i].classList.remove('active');

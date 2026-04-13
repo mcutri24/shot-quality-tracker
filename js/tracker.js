@@ -35,38 +35,38 @@ SQT.Tracker = {
     _bindTrackingUI: function() {
         var self = this;
 
-        // Quarter selector
+        // Quarter selector — use onclick to avoid stacking handlers
         var qBtns = document.querySelectorAll('.quarter-selector button');
         for (var i = 0; i < qBtns.length; i++) {
-            qBtns[i].addEventListener('click', function() {
+            qBtns[i].onclick = function() {
                 for (var j = 0; j < qBtns.length; j++) qBtns[j].classList.remove('active');
                 this.classList.add('active');
                 self.currentQuarter = this.textContent.trim();
-            });
+            };
         }
 
         // Dashboard toggle
-        document.getElementById('tracking-dashboard-btn').addEventListener('click', function() {
+        document.getElementById('tracking-dashboard-btn').onclick = function() {
             SQT.App.showScreen('dashboard');
             if (SQT.Dashboard) SQT.Dashboard.showGame(self.game, true);
-        });
+        };
 
         // Undo button
-        document.getElementById('tracking-undo-btn').addEventListener('click', function() {
+        document.getElementById('tracking-undo-btn').onclick = function() {
             self._undo();
-        });
+        };
 
         // Play List button
-        document.getElementById('tracking-playlist-btn').addEventListener('click', function() {
+        document.getElementById('tracking-playlist-btn').onclick = function() {
             self._showPlayList();
-        });
+        };
 
         // End game button
-        document.getElementById('tracking-end-btn').addEventListener('click', function() {
+        document.getElementById('tracking-end-btn').onclick = function() {
             if (confirm('End this game?')) {
                 SQT.Game.endGame();
             }
-        });
+        };
     },
 
     _renderTrackingTop: function() {
@@ -380,10 +380,11 @@ SQT.Tracker = {
                 }
                 var gradeLabel = p.grade ? p.grade.charAt(0).toUpperCase() + p.grade.slice(1) : '';
 
+                var initials = (p.playerName || '').split(' ').map(function(w) { return w.charAt(0); }).join('').toUpperCase();
                 html += '<div class="playlist-item" data-idx="' + i + '">' +
                     '<div class="pl-num">' + (i + 1) + '</div>' +
                     '<div class="pl-detail">' +
-                        '<span class="pl-player">#' + p.playerNumber + '</span> ' +
+                        '<span class="pl-player">#' + p.playerNumber + ' ' + initials + '</span> ' +
                         '<span class="pl-shot">' + shotLabel + '</span>' +
                         '<div style="font-size:11px;color:var(--text-muted);">' + p.quarter + (p.playName ? ' &bull; ' + self._esc(p.playName) : '') + '</div>' +
                     '</div>' +
