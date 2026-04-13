@@ -64,8 +64,8 @@
     background: none;
     border: 1px solid var(--border);
     border-radius: 20px;
-    padding: 6px 14px;
-    font-size: 12px;
+    padding: 8px 18px;
+    font-size: 14px;
     font-weight: 500;
     color: var(--text-secondary);
 }
