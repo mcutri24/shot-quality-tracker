@@ -1009,3 +1009,53 @@
 .btn-sm:active {
     background: var(--bg-card);
 }
+
+/* ===== PLAY MANAGEMENT ===== */
+.play-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #1a1a1e;
+    color: var(--text-secondary);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+/* ===== PLAY SELECT GRID (Tracker) ===== */
+.play-select-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 8px 12px;
+    flex: 1;
+    align-content: start;
+    overflow-y: auto;
+}
+.play-select-btn {
+    padding: 18px 12px;
+    border-radius: 10px;
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+}
+.play-select-btn:active {
+    border-color: var(--accent);
+}
+.play-select-btn.play-blue {
+    border-color: #4a9eff;
+    color: #4a9eff;
+    background: rgba(74, 158, 255, 0.08);
+}
+.play-select-btn.play-orange {
+    border-color: var(--orange);
+    color: var(--orange);
+    background: rgba(249, 115, 22, 0.08);
+}

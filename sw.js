@@ -1,4 +1,4 @@
-var CACHE_NAME = 'sqt-v10';
+var CACHE_NAME = 'sqt-v11';
 var ASSETS = [
     './',
     './index.html',
@@ -9,6 +9,7 @@ var ASSETS = [
     './css/components.css',
     './js/storage.js',
     './js/roster.js',
+    './js/plays.js',
     './js/game.js',
     './js/tracker.js',
     './js/dashboard.js',

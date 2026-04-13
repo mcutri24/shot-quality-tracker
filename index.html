@@ -40,6 +40,10 @@
                 <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
                 <span class="btn-label">Manage Roster<br><span class="btn-sub">Add or edit players</span></span>
             </button>
+            <button class="menu-btn" id="btn-plays">
+                <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+                <span class="btn-label">Manage Plays<br><span class="btn-sub">Add or edit offensive sets</span></span>
+            </button>
             <button class="menu-btn" id="btn-history">
                 <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
                 <span class="btn-label">Game History<br><span class="btn-sub">View past games</span></span>
@@ -67,6 +71,20 @@
             <input type="text" id="roster-num-input" class="number-input" placeholder="#" maxlength="3" inputmode="numeric">
             <input type="text" id="roster-name-input" placeholder="Player name">
             <button class="btn btn-primary" id="roster-add-btn">Add</button>
+        </div>
+    </div>
+
+    <!-- ===== PLAYS SCREEN ===== -->
+    <div id="plays-screen" class="screen">
+        <div class="top-bar">
+            <button class="back-btn" id="plays-back">&larr; Back</button>
+            <span class="title">Plays</span>
+            <span style="width:50px"></span>
+        </div>
+        <div class="roster-list" id="plays-list"></div>
+        <div class="add-player-bar">
+            <input type="text" id="plays-name-input" placeholder="Play name (e.g. Motion)">
+            <button class="btn btn-primary" id="plays-add-btn">Add</button>
         </div>
     </div>
 
@@ -137,6 +155,7 @@
         <div class="dashboard-tabs">
             <button data-tab="player" class="active">By Player</button>
             <button data-tab="type">By Type</button>
+            <button data-tab="play">By Play</button>
             <button data-tab="quarter">By Quarter</button>
             <button data-tab="grade">By Grade</button>
         </div>
@@ -198,6 +217,7 @@
 <!-- Scripts (order matters) -->
 <script src="js/storage.js"></script>
 <script src="js/roster.js"></script>
+<script src="js/plays.js"></script>
 <script src="js/game.js"></script>
 <script src="js/tracker.js"></script>
 <script src="js/dashboard.js"></script>

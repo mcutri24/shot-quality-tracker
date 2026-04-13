@@ -8,6 +8,7 @@ SQT.Storage = {
     GAMES_KEY: 'sqt_games',
     SEASONS_KEY: 'sqt_seasons',
     ACTIVE_SEASON_KEY: 'sqt_active_season',
+    PLAYS_KEY: 'sqt_plays',
 
     // ---- Roster ----
     getRoster: function() {
@@ -87,6 +88,30 @@ SQT.Storage = {
     getGamesBySeason: function(seasonId) {
         var games = this.getGames();
         return games.filter(function(g) { return g.seasonId === seasonId; });
+    },
+
+    // ---- Plays ----
+    getPlays: function() {
+        try {
+            var data = localStorage.getItem(this.PLAYS_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
+    },
+
+    savePlays: function(plays) {
+        localStorage.setItem(this.PLAYS_KEY, JSON.stringify(plays));
+    },
+
+    initDefaultPlays: function() {
+        var plays = this.getPlays();
+        if (plays.length > 0) return;
+        var defaults = [
+            { id: this.uuid(), name: 'Transition', color: 'blue', order: 0, isDefault: true },
+            { id: this.uuid(), name: 'No Play', color: 'orange', order: 1, isDefault: true }
+        ];
+        this.savePlays(defaults);
     },
 
     // One-time migration: tag existing games with a default season

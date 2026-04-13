@@ -1,14 +1,14 @@
 /**
  * Tap-tap-tap possession logging flow.
- * Step 1: Player → Step 2: Shot Type → Step 3: Result → Step 4: Grade
- * Special flows: Turnover (auto-miss), Free Throws (made X of Y)
+ * Step 1: Player → Step 2: Shot Type → Step 3: Result → Step 4: Play → Step 5: Grade
+ * Special flows: Turnover (auto-miss, skip result), Free Throws (made X of Y)
  */
 var SQT = window.SQT || {};
 
 SQT.Tracker = {
     game: null,
     currentQuarter: 'Q1',
-    step: 1,         // 1=player, 2=shot, 3=result, 4=grade
+    step: 1,         // 1=player, 2=shot, 3=result, 4=play, 5=grade
     pending: null,    // Partial possession being built
 
     SHOT_TYPES: [
@@ -104,7 +104,8 @@ SQT.Tracker = {
             case 2: this._renderShotSelect(area); break;
             case 3: this._renderResultSelect(area); break;
             case 'ft': this._renderFTSelect(area); break;
-            case 4: this._renderGradeSelect(area); break;
+            case 4: this._renderPlaySelect(area); break;
+            case 5: this._renderGradeSelect(area); break;
         }
     },
 
@@ -170,10 +171,10 @@ SQT.Tracker = {
                 self.pending.basePoints = shot.points;
 
                 if (shot.special === 'to') {
-                    // Turnover: auto-miss, skip to grade
+                    // Turnover: auto-miss, skip to play select
                     self.pending.result = 'missed';
                     self.pending.points = 0;
-                    self.step = 4;
+                    self.step = 4; // play select
                 } else if (shot.special === 'ft') {
                     // Free throws: special screen
                     self.step = 'ft';
@@ -198,13 +199,13 @@ SQT.Tracker = {
         area.querySelector('.result-btn.made').addEventListener('click', function() {
             self.pending.result = 'made';
             self.pending.points = self.pending.basePoints;
-            self.step = 4;
+            self.step = 4; // play select
             self._renderStep();
         });
         area.querySelector('.result-btn.missed').addEventListener('click', function() {
             self.pending.result = 'missed';
             self.pending.points = 0;
-            self.step = 4;
+            self.step = 4; // play select
             self._renderStep();
         });
     },
@@ -244,12 +245,40 @@ SQT.Tracker = {
             self.pending.ftMade = made;
             self.pending.ftAttempts = att;
             self.pending.points = made;
-            self.step = 4;
+            self.step = 4; // play select
             self._renderStep();
         });
     },
 
-    // Step 4: Grade
+    // Step 4: Play select
+    _renderPlaySelect: function(area) {
+        var plays = SQT.Storage.getPlays();
+        var stepNum = this.pending.shotType === 'turnover' ? '3' : '4';
+        var html = '<div class="tap-prompt"><span class="step-label">Step ' + stepNum + ':</span> Offensive Play</div>';
+        html += '<div class="play-select-grid">';
+        for (var i = 0; i < plays.length; i++) {
+            var p = plays[i];
+            var cls = 'play-select-btn';
+            if (p.color === 'blue') cls += ' play-blue';
+            else if (p.color === 'orange') cls += ' play-orange';
+            html += '<button class="' + cls + '" data-id="' + p.id + '" data-name="' + this._esc(p.name) + '">' + this._esc(p.name) + '</button>';
+        }
+        html += '</div>';
+        area.innerHTML = html;
+
+        var self = this;
+        var btns = area.querySelectorAll('.play-select-btn');
+        for (var b = 0; b < btns.length; b++) {
+            btns[b].addEventListener('click', function() {
+                self.pending.playId = this.getAttribute('data-id');
+                self.pending.playName = this.getAttribute('data-name');
+                self.step = 5; // grade
+                self._renderStep();
+            });
+        }
+    },
+
+    // Step 5: Grade
     _renderGradeSelect: function(area) {
         var label = this.pending.shotLabel;
         if (this.pending.shotType === 'free_throws') {
@@ -260,7 +289,8 @@ SQT.Tracker = {
             label += ' — ' + (this.pending.result === 'made' ? 'Made' : 'Missed');
         }
 
-        var html = '<div class="tap-prompt"><span class="step-label">Step ' + (this.pending.shotType === 'turnover' ? '3' : '4') + ':</span> Possession Grade — ' + label + '</div>';
+        var gradeStepNum = this.pending.shotType === 'turnover' ? '4' : '5';
+        var html = '<div class="tap-prompt"><span class="step-label">Step ' + gradeStepNum + ':</span> Possession Grade — ' + label + '</div>';
         html += '<div class="grade-grid">';
         html += '<button class="grade-btn gold" data-grade="gold">Gold</button>';
         html += '<button class="grade-btn silver" data-grade="silver">Silver</button>';
@@ -299,10 +329,12 @@ SQT.Tracker = {
             else if (this.step === 3) this.step = 2;
             else if (this.step === 'ft') this.step = 2;
             else if (this.step === 4) {
+                // Play select → back to result (or shot type for turnover, or FT)
                 if (this.pending.shotType === 'turnover') this.step = 2;
                 else if (this.pending.shotType === 'free_throws') this.step = 'ft';
                 else this.step = 3;
             }
+            else if (this.step === 5) this.step = 4; // Grade → back to play select
             this._renderStep();
             return;
         }
@@ -353,7 +385,7 @@ SQT.Tracker = {
                     '<div class="pl-detail">' +
                         '<span class="pl-player">#' + p.playerNumber + '</span> ' +
                         '<span class="pl-shot">' + shotLabel + '</span>' +
-                        '<div style="font-size:11px;color:var(--text-muted);">' + p.quarter + '</div>' +
+                        '<div style="font-size:11px;color:var(--text-muted);">' + p.quarter + (p.playName ? ' &bull; ' + self._esc(p.playName) : '') + '</div>' +
                     '</div>' +
                     '<span class="pl-result ' + resultClass + '">' + resultText + '</span>' +
                     '<span class="pl-grade ' + (p.grade || '') + '">' + gradeLabel + '</span>' +
@@ -402,6 +434,13 @@ SQT.Tracker = {
             '<option value="silver"' + (p.grade === 'silver' ? ' selected' : '') + '>Silver</option>' +
             '<option value="bronze"' + (p.grade === 'bronze' ? ' selected' : '') + '>Bronze</option>';
 
+        var plays = SQT.Storage.getPlays();
+        var playOptions = '';
+        for (var pl2 = 0; pl2 < plays.length; pl2++) {
+            var selPlay = (plays[pl2].id === p.playId) ? ' selected' : '';
+            playOptions += '<option value="' + plays[pl2].id + '"' + selPlay + '>' + this._esc(plays[pl2].name) + '</option>';
+        }
+
         var playerOptions = '';
         var roster = SQT.Roster.players;
         for (var r = 0; r < roster.length; r++) {
@@ -415,6 +454,7 @@ SQT.Tracker = {
             '<div class="edit-field"><label>Player</label><select id="edit-player">' + playerOptions + '</select></div>' +
             '<div class="edit-field"><label>Shot Type</label><select id="edit-shot">' + shotOptions + '</select></div>' +
             '<div class="edit-field"><label>Result</label><select id="edit-result">' + resultOptions + '</select></div>' +
+            '<div class="edit-field"><label>Play</label><select id="edit-play">' + playOptions + '</select></div>' +
             '<div class="edit-field"><label>Grade</label><select id="edit-grade">' + gradeOptions + '</select></div>' +
             '<div class="edit-poss-actions">' +
                 '<button class="btn" id="edit-cancel">Cancel</button>' +
@@ -455,6 +495,10 @@ SQT.Tracker = {
             p.shotType = newShot;
             p.result = document.getElementById('edit-result').value;
             p.grade = document.getElementById('edit-grade').value;
+
+            var selPlayEl = document.getElementById('edit-play');
+            p.playId = selPlayEl.value;
+            p.playName = selPlayEl.options[selPlayEl.selectedIndex].text;
 
             // Recalculate points
             if (newShot === 'turnover') {

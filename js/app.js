@@ -13,6 +13,7 @@ SQT.App = {
 
         // Initialize modules
         SQT.Roster.init();
+        SQT.Plays.init();
 
         // Bind home screen buttons
         this._bindHome();
@@ -55,6 +56,9 @@ SQT.App = {
         document.getElementById('btn-roster').addEventListener('click', function() {
             self.showScreen('roster');
         });
+        document.getElementById('btn-plays').addEventListener('click', function() {
+            self.showScreen('plays');
+        });
         document.getElementById('btn-history').addEventListener('click', function() {
             self.showScreen('history');
             if (SQT.Game) SQT.Game.renderHistory();
@@ -70,6 +74,9 @@ SQT.App = {
 
         // Back buttons
         document.getElementById('roster-back').addEventListener('click', function() {
+            self.showScreen('home');
+        });
+        document.getElementById('plays-back').addEventListener('click', function() {
             self.showScreen('home');
         });
         document.getElementById('setup-back').addEventListener('click', function() {
