@@ -39,9 +39,12 @@ SQT.Tracker = {
         var qBtns = document.querySelectorAll('.quarter-selector button');
         for (var i = 0; i < qBtns.length; i++) {
             qBtns[i].onclick = function() {
+                var newQ = this.textContent.trim();
+                if (newQ === self.currentQuarter) return;
                 for (var j = 0; j < qBtns.length; j++) qBtns[j].classList.remove('active');
                 this.classList.add('active');
-                self.currentQuarter = this.textContent.trim();
+                self.currentQuarter = newQ;
+                self._showQuarterSplash(newQ);
             };
         }
 
@@ -102,6 +105,39 @@ SQT.Tracker = {
                 el.classList.add('bump');
             }
         }
+
+        // Hot/cold streak indicator
+        var badge = document.getElementById('streak-badge');
+        var consecutiveMakes = 0;
+        var consecutiveMisses = 0;
+        for (var s = poss.length - 1; s >= 0; s--) {
+            var p = poss[s];
+            if (p.shotType === 'free_throws') break; // FTs break the streak
+            var isMade = (p.result === 'made');
+            var isMiss = (p.result === 'missed' || p.shotType === 'turnover');
+            if (consecutiveMakes === 0 && consecutiveMisses === 0) {
+                // Start counting from the most recent
+                if (isMade) consecutiveMakes = 1;
+                else if (isMiss) consecutiveMisses = 1;
+                else break;
+            } else if (consecutiveMakes > 0) {
+                if (isMade) consecutiveMakes++;
+                else break;
+            } else if (consecutiveMisses > 0) {
+                if (isMiss) consecutiveMisses++;
+                else break;
+            }
+        }
+
+        badge.className = 'streak-badge';
+        badge.textContent = '';
+        if (consecutiveMakes >= 3) {
+            badge.classList.add('hot');
+            badge.textContent = '\uD83D\uDD25 ' + consecutiveMakes;
+        } else if (consecutiveMisses >= 5) {
+            badge.classList.add('cold');
+            badge.textContent = '\u2744\uFE0F ' + consecutiveMisses;
+        }
     },
 
     _renderStep: function() {
@@ -123,11 +159,39 @@ SQT.Tracker = {
             area.innerHTML = '<div class="tap-prompt">No players in roster. Go back and add players first.</div>';
             return;
         }
+
+        // Compute per-player FG stats for hot/cold badges
+        var playerStats = {};
+        if (this.game && this.game.possessions) {
+            for (var s = 0; s < this.game.possessions.length; s++) {
+                var pos = this.game.possessions[s];
+                if (pos.shotType === 'free_throws' || pos.shotType === 'turnover') continue;
+                var pid = pos.playerId;
+                if (!playerStats[pid]) playerStats[pid] = { fga: 0, fgm: 0 };
+                playerStats[pid].fga++;
+                if (pos.result === 'made') playerStats[pid].fgm++;
+            }
+        }
+
         var html = '<div class="tap-prompt"><span class="step-label">Step 1:</span> Select Player</div>';
         html += '<div class="player-grid">';
         for (var i = 0; i < roster.length; i++) {
             var p = roster[i];
-            html += '<button class="player-btn" data-id="' + p.id + '" data-num="' + p.number + '" data-name="' + this._esc(p.name) + '">' +
+            var stats = playerStats[p.id];
+            var badgeHtml = '';
+            var extraCls = '';
+            if (stats && stats.fga >= 3) {
+                var pct = stats.fgm / stats.fga;
+                if (pct >= 0.66) {
+                    badgeHtml = '<span class="player-badge hot-badge">\uD83D\uDD25</span>';
+                    extraCls = ' player-hot';
+                } else if (pct <= 0.20) {
+                    badgeHtml = '<span class="player-badge cold-badge">\u2744\uFE0F</span>';
+                    extraCls = ' player-cold';
+                }
+            }
+            html += '<button class="player-btn' + extraCls + '" data-id="' + p.id + '" data-num="' + p.number + '" data-name="' + this._esc(p.name) + '" style="position:relative;">' +
+                badgeHtml +
                 '<span class="num">' + p.number + '</span>' +
                 '<span class="name">' + this._esc(p.name) + '</span>' +
             '</button>';
@@ -317,16 +381,54 @@ SQT.Tracker = {
 
     _logPossession: function() {
         // Clean up pending and add to game
+        var pts = this.pending.points || 0;
         delete this.pending.shotLabel;
         delete this.pending.basePoints;
         this.game.possessions.push(this.pending);
         SQT.Storage.saveGame(this.game);
+
+        // Score ticker popup for made shots
+        if (pts > 0) {
+            this._showScorePopup(pts, this.pending.shotType);
+        }
 
         // Reset for next possession
         this.pending = null;
         this.step = 1;
         this._updateMiniStats();
         this._renderStep();
+    },
+
+    _showScorePopup: function(pts, shotType) {
+        var el = document.getElementById('score-popup');
+        el.textContent = '+' + pts;
+        el.className = 'score-popup';
+        void el.offsetWidth; // force reflow
+        if (shotType === 'free_throws') {
+            el.classList.add('pop-ft');
+        } else if (pts >= 3) {
+            el.classList.add('pop-3');
+        } else {
+            el.classList.add('pop-2');
+        }
+        clearTimeout(this._scorePopTimer);
+        var self = this;
+        this._scorePopTimer = setTimeout(function() {
+            el.className = 'score-popup';
+        }, 950);
+    },
+
+    _showQuarterSplash: function(quarter) {
+        var splash = document.getElementById('quarter-splash');
+        var text = document.getElementById('splash-text');
+        text.textContent = quarter;
+        splash.classList.remove('active');
+        void splash.offsetWidth;
+        splash.classList.add('active');
+        clearTimeout(this._splashTimer);
+        this._splashTimer = setTimeout(function() {
+            splash.classList.remove('active');
+        }, 850);
     },
 
     _undo: function() {
