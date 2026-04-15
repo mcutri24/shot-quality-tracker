@@ -680,6 +680,11 @@
     border-color: var(--red);
     color: var(--red);
 }
+.shot-grid .shot-btn.and1 {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-bg);
+}
 .shot-grid .shot-btn.free-throw {
     border-color: var(--orange);
     color: var(--orange);

@@ -18,8 +18,19 @@ SQT.Tracker = {
         { id: 'contested_mid',   label: 'Contested Mid-Range', points: 2 },
         { id: 'open_3',          label: 'Open 3',            points: 3 },
         { id: 'contested_3',     label: 'Contested 3',       points: 3 },
+        { id: 'and1',            label: 'And-1',             points: 0, special: 'a1' },
         { id: 'free_throws',     label: 'Free Throws',       points: 0, special: 'ft' },
         { id: 'turnover',        label: 'Turnover',          points: 0, special: 'to' }
+    ],
+
+    // Field goal types only (for And-1 base shot selection)
+    FG_TYPES: [
+        { id: 'open_layup',      label: 'Open Layup',        points: 2 },
+        { id: 'contested_layup', label: 'Contested Layup',   points: 2 },
+        { id: 'open_mid',        label: 'Open Mid-Range',    points: 2 },
+        { id: 'contested_mid',   label: 'Contested Mid-Range', points: 2 },
+        { id: 'open_3',          label: 'Open 3',            points: 3 },
+        { id: 'contested_3',     label: 'Contested 3',       points: 3 }
     ],
 
     start: function(game) {
@@ -112,7 +123,17 @@ SQT.Tracker = {
         var consecutiveMisses = 0;
         for (var s = poss.length - 1; s >= 0; s--) {
             var p = poss[s];
-            if (p.shotType === 'free_throws') break; // FTs break the streak
+            // FTs: continue hot if made >= 1, continue cold if made = 0, else break
+            if (p.shotType === 'free_throws') {
+                var ftMade = p.ftMade || 0;
+                if (consecutiveMakes > 0 && ftMade >= 1) { consecutiveMakes++; continue; }
+                if (consecutiveMisses > 0 && ftMade === 0) { consecutiveMisses++; continue; }
+                if (consecutiveMakes === 0 && consecutiveMisses === 0) {
+                    if (ftMade >= 1) { consecutiveMakes = 1; continue; }
+                    else { consecutiveMisses = 1; continue; }
+                }
+                break;
+            }
             var isMade = (p.result === 'made');
             var isMiss = (p.result === 'missed' || p.shotType === 'turnover');
             if (consecutiveMakes === 0 && consecutiveMisses === 0) {
@@ -147,6 +168,8 @@ SQT.Tracker = {
             case 2: this._renderShotSelect(area); break;
             case 3: this._renderResultSelect(area); break;
             case 'ft': this._renderFTSelect(area); break;
+            case 'a1_shot': this._renderAnd1ShotSelect(area); break;
+            case 'a1_ft': this._renderAnd1FTSelect(area); break;
             case 4: this._renderPlaySelect(area); break;
             case 5: this._renderGradeSelect(area); break;
         }
@@ -226,6 +249,7 @@ SQT.Tracker = {
             var cls = 'shot-btn';
             if (s.special === 'to') cls += ' turnover';
             if (s.special === 'ft') cls += ' free-throw';
+            if (s.special === 'a1') cls += ' and1';
             html += '<button class="' + cls + '" data-idx="' + i + '">' + s.label + '</button>';
         }
         html += '</div>';
@@ -249,6 +273,9 @@ SQT.Tracker = {
                 } else if (shot.special === 'ft') {
                     // Free throws: special screen
                     self.step = 'ft';
+                } else if (shot.special === 'a1') {
+                    // And-1: pick the base shot type
+                    self.step = 'a1_shot';
                 } else {
                     self.step = 3;
                 }
@@ -321,6 +348,61 @@ SQT.Tracker = {
         });
     },
 
+    // And-1: Base shot selection
+    _renderAnd1ShotSelect: function(area) {
+        var html = '<div class="tap-prompt"><span class="step-label">And-1:</span> What was the shot? — #' + this.pending.playerNumber + '</div>';
+        html += '<div class="shot-grid">';
+        for (var i = 0; i < this.FG_TYPES.length; i++) {
+            var s = this.FG_TYPES[i];
+            html += '<button class="shot-btn" data-idx="' + i + '">' + s.label + '</button>';
+        }
+        html += '</div>';
+        area.innerHTML = html;
+
+        var self = this;
+        var btns = area.querySelectorAll('.shot-btn');
+        for (var b = 0; b < btns.length; b++) {
+            btns[b].addEventListener('click', function() {
+                var idx = parseInt(this.getAttribute('data-idx'));
+                var shot = self.FG_TYPES[idx];
+                self.pending.shotType = shot.id;
+                self.pending.shotLabel = shot.label;
+                self.pending.basePoints = shot.points;
+                self.pending.and1 = true;
+                self.pending.result = 'made';
+                self.pending.points = shot.points; // will add FT in next step
+                self.step = 'a1_ft';
+                self._renderStep();
+            });
+        }
+    },
+
+    // And-1: Free throw made/missed
+    _renderAnd1FTSelect: function(area) {
+        var html = '<div class="tap-prompt"><span class="step-label">And-1 FT:</span> ' + this.pending.shotLabel + ' — #' + this.pending.playerNumber + '</div>';
+        html += '<div class="result-grid">';
+        html += '<button class="result-btn made">FT MADE</button>';
+        html += '<button class="result-btn missed">FT MISSED</button>';
+        html += '</div>';
+        area.innerHTML = html;
+
+        var self = this;
+        area.querySelector('.result-btn.made').addEventListener('click', function() {
+            self.pending.and1FtMade = 1;
+            self.pending.and1FtAttempts = 1;
+            self.pending.points = self.pending.basePoints + 1;
+            self.step = 4; // play select
+            self._renderStep();
+        });
+        area.querySelector('.result-btn.missed').addEventListener('click', function() {
+            self.pending.and1FtMade = 0;
+            self.pending.and1FtAttempts = 1;
+            self.pending.points = self.pending.basePoints;
+            self.step = 4; // play select
+            self._renderStep();
+        });
+    },
+
     // Step 4: Play select
     _renderPlaySelect: function(area) {
         var plays = SQT.Storage.getPlays();
@@ -356,6 +438,8 @@ SQT.Tracker = {
             label = 'FT: ' + this.pending.result;
         } else if (this.pending.shotType === 'turnover') {
             label = 'Turnover';
+        } else if (this.pending.and1) {
+            label += ' And-1 (+' + this.pending.points + ')';
         } else {
             label += ' — ' + (this.pending.result === 'made' ? 'Made' : 'Missed');
         }
@@ -389,7 +473,7 @@ SQT.Tracker = {
 
         // Score ticker popup for made shots
         if (pts > 0) {
-            this._showScorePopup(pts, this.pending.shotType);
+            this._showScorePopup(pts, this.pending.shotType, this.pending.and1);
         }
 
         // Reset for next possession
@@ -399,13 +483,17 @@ SQT.Tracker = {
         this._renderStep();
     },
 
-    _showScorePopup: function(pts, shotType) {
+    _showScorePopup: function(pts, shotType, isAnd1) {
         var el = document.getElementById('score-popup');
         el.textContent = '+' + pts;
         el.className = 'score-popup';
         void el.offsetWidth; // force reflow
         if (shotType === 'free_throws') {
             el.classList.add('pop-ft');
+        } else if (isAnd1) {
+            // And-1: use green for 2pt base, purple for 3pt base
+            var is3 = (shotType === 'open_3' || shotType === 'contested_3');
+            el.classList.add(is3 ? 'pop-3' : 'pop-2');
         } else if (pts >= 3) {
             el.classList.add('pop-3');
         } else {
@@ -437,10 +525,13 @@ SQT.Tracker = {
             if (this.step === 2) this.step = 1;
             else if (this.step === 3) this.step = 2;
             else if (this.step === 'ft') this.step = 2;
+            else if (this.step === 'a1_shot') this.step = 2;
+            else if (this.step === 'a1_ft') this.step = 'a1_shot';
             else if (this.step === 4) {
-                // Play select → back to result (or shot type for turnover, or FT)
+                // Play select → back to previous step
                 if (this.pending.shotType === 'turnover') this.step = 2;
                 else if (this.pending.shotType === 'free_throws') this.step = 'ft';
+                else if (this.pending.and1) this.step = 'a1_ft';
                 else this.step = 3;
             }
             else if (this.step === 5) this.step = 4; // Grade → back to play select
@@ -476,6 +567,7 @@ SQT.Tracker = {
             for (var i = poss.length - 1; i >= 0; i--) {
                 var p = poss[i];
                 var shotLabel = self._shotLabel(p.shotType);
+                if (p.and1) shotLabel += ' (And-1)';
                 var resultText, resultClass;
                 if (p.shotType === 'turnover') {
                     resultText = 'TO';
@@ -483,6 +575,9 @@ SQT.Tracker = {
                 } else if (p.shotType === 'free_throws') {
                     resultText = p.ftMade + '/' + p.ftAttempts + ' FT';
                     resultClass = p.ftMade > 0 ? 'made' : 'missed';
+                } else if (p.and1) {
+                    resultText = '+' + p.points;
+                    resultClass = 'made';
                 } else {
                     resultText = p.result === 'made' ? 'Made' : 'Miss';
                     resultClass = p.result;
@@ -533,6 +628,7 @@ SQT.Tracker = {
         var shotOptions = '';
         for (var i = 0; i < this.SHOT_TYPES.length; i++) {
             var s = this.SHOT_TYPES[i];
+            if (s.special === 'a1') continue; // And-1 not editable as shot type
             var sel = (s.id === p.shotType) ? ' selected' : '';
             shotOptions += '<option value="' + s.id + '"' + sel + '>' + s.label + '</option>';
         }
@@ -614,14 +710,18 @@ SQT.Tracker = {
             if (newShot === 'turnover') {
                 p.result = 'missed';
                 p.points = 0;
+                delete p.and1;
             } else if (newShot === 'free_throws') {
                 p.points = p.ftMade || 0;
+                delete p.and1;
             } else {
                 var shotDef = null;
                 for (var s = 0; s < self.SHOT_TYPES.length; s++) {
                     if (self.SHOT_TYPES[s].id === newShot) { shotDef = self.SHOT_TYPES[s]; break; }
                 }
-                p.points = (p.result === 'made' && shotDef) ? shotDef.points : 0;
+                var basePoints = (p.result === 'made' && shotDef) ? shotDef.points : 0;
+                // Add And-1 FT bonus if applicable
+                p.points = basePoints + (p.and1 ? (p.and1FtMade || 0) : 0);
             }
 
             SQT.Storage.saveGame(self.game);
@@ -637,7 +737,7 @@ SQT.Tracker = {
             'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
             'open_mid': 'Open Mid', 'contested_mid': 'Contested Mid',
             'open_3': 'Open 3', 'contested_3': 'Contested 3',
-            'free_throws': 'Free Throws', 'turnover': 'Turnover'
+            'and1': 'And-1', 'free_throws': 'Free Throws', 'turnover': 'Turnover'
         };
         return map[type] || type;
     },
