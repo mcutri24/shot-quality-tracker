@@ -177,7 +177,7 @@ SQT.Tracker = {
             badge.textContent = '\u2744\uFE0F ' + consecutiveMisses;
         }
 
-        // Momentum dots — show last 20 possessions as green/red dots
+        // Momentum dots — show all possessions as green/red dots
         this._renderMomentumDots();
     },
 
@@ -511,20 +511,22 @@ SQT.Tracker = {
     },
 
     _logPossession: function() {
-        // Clean up pending and add to game
+        // Capture values before push for score popup
         var pts = this.pending.points || 0;
+        var popShotType = this.pending.shotType;
+        var popAnd1 = this.pending.and1;
+
         delete this.pending.shotLabel;
         delete this.pending.basePoints;
         this.game.possessions.push(this.pending);
+        this.pending = null;
         SQT.Storage.saveGame(this.game);
 
         // Score ticker popup for made shots
         if (pts > 0) {
-            this._showScorePopup(pts, this.pending.shotType, this.pending.and1);
+            this._showScorePopup(pts, popShotType, popAnd1);
         }
 
-        // Reset for next possession
-        this.pending = null;
         this.step = 1;
         this._updateMiniStats();
         this._renderStep();
@@ -684,6 +686,7 @@ SQT.Tracker = {
             shotOptions += '<option value="' + s.id + '"' + sel + '>' + s.label + '</option>';
         }
 
+        var isFT = (p.shotType === 'free_throws');
         var resultOptions = '<option value="made"' + (p.result === 'made' ? ' selected' : '') + '>Made</option>' +
             '<option value="missed"' + (p.result === 'missed' ? ' selected' : '') + '>Missed</option>';
 
@@ -706,11 +709,19 @@ SQT.Tracker = {
             playerOptions += '<option value="' + pl.id + '"' + sel2 + '>#' + pl.number + ' ' + this._esc(pl.name) + '</option>';
         }
 
+        var resultFieldHtml;
+        if (isFT) {
+            resultFieldHtml = '<div class="edit-field"><label>FT Made</label><input type="number" id="edit-ft-made" min="0" value="' + (p.ftMade || 0) + '" style="width:60px;"></div>' +
+                '<div class="edit-field"><label>FT Attempts</label><input type="number" id="edit-ft-att" min="0" value="' + (p.ftAttempts || 0) + '" style="width:60px;"></div>';
+        } else {
+            resultFieldHtml = '<div class="edit-field"><label>Result</label><select id="edit-result">' + resultOptions + '</select></div>';
+        }
+
         overlay.innerHTML = '<div class="edit-poss-box">' +
             '<h3>Edit Possession #' + (idx + 1) + '</h3>' +
             '<div class="edit-field"><label>Player</label><select id="edit-player">' + playerOptions + '</select></div>' +
             '<div class="edit-field"><label>Shot Type</label><select id="edit-shot">' + shotOptions + '</select></div>' +
-            '<div class="edit-field"><label>Result</label><select id="edit-result">' + resultOptions + '</select></div>' +
+            resultFieldHtml +
             '<div class="edit-field"><label>Play</label><select id="edit-play">' + playOptions + '</select></div>' +
             '<div class="edit-field"><label>Grade</label><select id="edit-grade">' + gradeOptions + '</select></div>' +
             '<div class="edit-poss-actions">' +
@@ -750,8 +761,19 @@ SQT.Tracker = {
 
             var newShot = document.getElementById('edit-shot').value;
             p.shotType = newShot;
-            p.result = document.getElementById('edit-result').value;
             p.grade = document.getElementById('edit-grade').value;
+
+            // Read result: FT uses number inputs, others use dropdown
+            if (newShot === 'free_throws') {
+                var editFtMade = parseInt(document.getElementById('edit-ft-made').value) || 0;
+                var editFtAtt = parseInt(document.getElementById('edit-ft-att').value) || 0;
+                if (editFtMade > editFtAtt) editFtAtt = editFtMade;
+                p.ftMade = editFtMade;
+                p.ftAttempts = editFtAtt;
+                p.result = editFtMade + '/' + editFtAtt;
+            } else {
+                p.result = document.getElementById('edit-result').value;
+            }
 
             var selPlayEl = document.getElementById('edit-play');
             p.playId = selPlayEl.value;

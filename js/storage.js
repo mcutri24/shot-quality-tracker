@@ -9,6 +9,7 @@ SQT.Storage = {
     SEASONS_KEY: 'sqt_seasons',
     ACTIVE_SEASON_KEY: 'sqt_active_season',
     ACTIVE_GAME_KEY: 'sqt_active_game',
+    LIVE_GAME_KEY: 'sqt_live_game',
     PLAYS_KEY: 'sqt_plays',
 
     // ---- Roster ----
@@ -40,6 +41,28 @@ SQT.Storage = {
     },
 
     saveGame: function(game) {
+        // During live tracking, write only the single game to a dedicated key
+        var activeId = localStorage.getItem(this.ACTIVE_GAME_KEY);
+        if (activeId && game.id === activeId) {
+            localStorage.setItem(this.LIVE_GAME_KEY, JSON.stringify(game));
+            return;
+        }
+        // Non-live save: merge into full games list
+        this._mergeGameToList(game);
+    },
+
+    // Flush live game data into the full games list (call on game end)
+    flushLiveGame: function() {
+        var data = localStorage.getItem(this.LIVE_GAME_KEY);
+        if (!data) return;
+        try {
+            var game = JSON.parse(data);
+            this._mergeGameToList(game);
+            localStorage.removeItem(this.LIVE_GAME_KEY);
+        } catch (e) {}
+    },
+
+    _mergeGameToList: function(game) {
         var games = this.getGames();
         var idx = -1;
         for (var i = 0; i < games.length; i++) {
@@ -94,6 +117,14 @@ SQT.Storage = {
     getActiveGame: function() {
         var id = localStorage.getItem(this.ACTIVE_GAME_KEY);
         if (!id) return null;
+        // Check live game key first (most up-to-date during tracking)
+        var liveData = localStorage.getItem(this.LIVE_GAME_KEY);
+        if (liveData) {
+            try {
+                var liveGame = JSON.parse(liveData);
+                if (liveGame.id === id) return liveGame;
+            } catch (e) {}
+        }
         var games = this.getGames();
         for (var i = 0; i < games.length; i++) {
             if (games[i].id === id) return games[i];
@@ -105,6 +136,8 @@ SQT.Storage = {
         if (id) {
             localStorage.setItem(this.ACTIVE_GAME_KEY, id);
         } else {
+            // Flush live game to full list before clearing
+            this.flushLiveGame();
             localStorage.removeItem(this.ACTIVE_GAME_KEY);
         }
     },

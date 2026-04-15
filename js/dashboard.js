@@ -116,6 +116,11 @@ SQT.Dashboard = {
                     if (poss[i].result === 'made') fg3m++;
                 }
             }
+            // And-1 FT stats
+            if (poss[i].and1) {
+                ftm += poss[i].and1FtMade || 0;
+                fta += poss[i].and1FtAttempts || 0;
+            }
         }
         var ppp = totalPoss > 0 ? (totalPts / totalPoss).toFixed(2) : '—';
         var fgPct = fga > 0 ? Math.round(fgm / fga * 100) + '%' : '—';
@@ -160,12 +165,12 @@ SQT.Dashboard = {
             } else {
                 pl.fga++;
                 if (p.result === 'made') pl.fgm++;
-                // 3-pointers
                 if (p.shotType === 'open_3' || p.shotType === 'contested_3') {
                     pl.fg3a++;
                     if (p.result === 'made') pl.fg3m++;
                 }
             }
+            if (p.and1) { pl.ftm += p.and1FtMade || 0; pl.fta += p.and1FtAttempts || 0; }
             if (p.grade === 'gold') pl.gold++;
             else if (p.grade === 'silver') pl.silver++;
             else if (p.grade === 'bronze') pl.bronze++;
@@ -331,6 +336,7 @@ SQT.Dashboard = {
             } else if (cp.shotType !== 'turnover') {
                 if (cp.result === 'made') cat.made++;
             }
+            if (cp.and1) { cats.ft.ftm += cp.and1FtMade || 0; cats.ft.fta += cp.and1FtAttempts || 0; }
         }
 
         html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
@@ -342,7 +348,7 @@ SQT.Dashboard = {
         for (var co = 0; co < catOrder.length; co++) {
             var ck = catOrder[co];
             var cd = cats[ck];
-            if (cd.att === 0) continue;
+            if (cd.att === 0 && !(ck === 'ft' && cd.fta > 0)) continue;
             var cPctTot = totalPoss > 0 ? Math.round(cd.att / totalPoss * 100) + '%' : '—';
             var cFgPct, cMadeStr;
             if (ck === 'ft') {
@@ -477,6 +483,7 @@ SQT.Dashboard = {
             } else if (cp.shotType !== 'turnover') {
                 if (cp.result === 'made') cat.made++;
             }
+            if (cp.and1) { cats.ft.ftm += cp.and1FtMade || 0; cats.ft.fta += cp.and1FtAttempts || 0; }
         }
 
         html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
@@ -488,7 +495,7 @@ SQT.Dashboard = {
         for (var co = 0; co < catOrder.length; co++) {
             var ck = catOrder[co];
             var cd = cats[ck];
-            if (cd.att === 0) continue;
+            if (cd.att === 0 && !(ck === 'ft' && cd.fta > 0)) continue;
             var cPctTot = totalPoss > 0 ? Math.round(cd.att / totalPoss * 100) + '%' : '—';
             var cFgPct, cMadeStr;
             if (ck === 'ft') {
@@ -541,6 +548,7 @@ SQT.Dashboard = {
                     if (p.result === 'made') qd.fg3m++;
                 }
             }
+            if (p.and1) { qd.ftm += p.and1FtMade || 0; qd.fta += p.and1FtAttempts || 0; }
             if (p.grade === 'gold') qd.gold++;
             else if (p.grade === 'silver') qd.silver++;
             else if (p.grade === 'bronze') qd.bronze++;
@@ -606,6 +614,7 @@ SQT.Dashboard = {
                     if (p.result === 'made') g.fg3m++;
                 }
             }
+            if (p.and1) { g.ftm += p.and1FtMade || 0; g.fta += p.and1FtAttempts || 0; }
         }
 
         var html = '<div style="overflow-x:auto"><table class="stat-table"><thead><tr>' +
@@ -665,6 +674,7 @@ SQT.Dashboard = {
                     if (p.result === 'made') pl.fg3m++;
                 }
             }
+            if (p.and1) { pl.ftm += p.and1FtMade || 0; pl.fta += p.and1FtAttempts || 0; }
             if (p.grade === 'gold') pl.gold++;
             else if (p.grade === 'silver') pl.silver++;
             else if (p.grade === 'bronze') pl.bronze++;
@@ -847,6 +857,7 @@ SQT.Dashboard = {
             } else if (cp.shotType !== 'turnover') {
                 if (cp.result === 'made') cat.made++;
             }
+            if (cp.and1) { cats.ft.ftm += cp.and1FtMade || 0; cats.ft.fta += cp.and1FtAttempts || 0; }
         }
 
         html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
@@ -858,7 +869,7 @@ SQT.Dashboard = {
         for (var co = 0; co < catOrder.length; co++) {
             var ck = catOrder[co];
             var cd = cats[ck];
-            if (cd.att === 0) continue;
+            if (cd.att === 0 && !(ck === 'ft' && cd.fta > 0)) continue;
             var cPctTot = totalPlayPoss > 0 ? Math.round(cd.att / totalPlayPoss * 100) + '%' : '—';
             var cFgPct, cMadeStr;
             if (ck === 'ft') {

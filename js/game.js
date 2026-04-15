@@ -10,13 +10,13 @@ SQT.Game = {
         if (dateInput && !dateInput.value) {
             dateInput.value = new Date().toISOString().split('T')[0];
         }
-        // Bind location toggle
+        // Bind location toggle (use onclick to avoid stacking listeners)
         var toggleBtns = document.querySelectorAll('#setup-screen .toggle-group button');
         for (var i = 0; i < toggleBtns.length; i++) {
-            toggleBtns[i].addEventListener('click', function() {
+            toggleBtns[i].onclick = function() {
                 for (var j = 0; j < toggleBtns.length; j++) toggleBtns[j].classList.remove('active');
                 this.classList.add('active');
-            });
+            };
         }
     },
 
@@ -92,8 +92,8 @@ SQT.Game = {
         game.finalScoreThem = scoreThem;
         game.result = scoreUs > scoreThem ? 'W' : 'L';
 
-        SQT.Storage.saveGame(game);
-        SQT.Storage.setActiveGame(null);
+        SQT.Storage.setActiveGame(null); // flushes live game to full list
+        SQT.Storage.saveGame(game); // now saves final state to full list
         SQT.App.currentGame = null;
 
         // Reset score inputs

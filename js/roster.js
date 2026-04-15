@@ -87,6 +87,7 @@ SQT.Roster = {
     },
 
     deletePlayer: function(playerId) {
+        if (!confirm('Delete this player?')) return;
         this.players = this.players.filter(function(p) { return p.id !== playerId; });
         SQT.Storage.saveRoster(this.players);
         this._render();

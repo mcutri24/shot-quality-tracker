@@ -48,7 +48,7 @@ SQT.Export = {
         }
 
         // Build CSV
-        var headers = ['Quarter', 'Player #', 'Player Name', 'Shot Type', 'Result', 'Points', 'Grade', 'FT Made', 'FT Attempts'];
+        var headers = ['Quarter', 'Player #', 'Player Name', 'Shot Type', 'Result', 'Points', 'Grade', 'Play', 'And-1', 'FT Made', 'FT Attempts'];
         if (!game) {
             headers = ['Opponent', 'Date', 'Game Result'].concat(headers);
         }
@@ -70,6 +70,8 @@ SQT.Export = {
                 resultLabel,
                 d.points || 0,
                 gradeLabel,
+                this._csvEsc(d.playName || ''),
+                d.and1 ? 'Yes' : '',
                 d.ftMade !== undefined ? d.ftMade : '',
                 d.ftAttempts !== undefined ? d.ftAttempts : ''
             ];
