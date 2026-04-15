@@ -91,10 +91,17 @@ SQT.Tracker = {
         var ppp = total > 0 ? (pts / total).toFixed(2) : '—';
         var fgPct = fga > 0 ? Math.round(fgm / fga * 100) + '%' : '—';
 
-        document.getElementById('mini-poss').textContent = total;
-        document.getElementById('mini-pts').textContent = pts;
-        document.getElementById('mini-ppp').textContent = ppp;
-        document.getElementById('mini-fg').textContent = fgPct;
+        var ids = ['mini-poss', 'mini-pts', 'mini-ppp', 'mini-fg'];
+        var vals = [total, pts, ppp, fgPct];
+        for (var u = 0; u < ids.length; u++) {
+            var el = document.getElementById(ids[u]);
+            if (el.textContent !== String(vals[u])) {
+                el.textContent = vals[u];
+                el.classList.remove('bump');
+                void el.offsetWidth; // force reflow
+                el.classList.add('bump');
+            }
+        }
     },
 
     _renderStep: function() {
@@ -292,9 +299,9 @@ SQT.Tracker = {
         var gradeStepNum = this.pending.shotType === 'turnover' ? '4' : '5';
         var html = '<div class="tap-prompt"><span class="step-label">Step ' + gradeStepNum + ':</span> Possession Grade — ' + label + '</div>';
         html += '<div class="grade-grid">';
-        html += '<button class="grade-btn gold" data-grade="gold">Gold</button>';
-        html += '<button class="grade-btn silver" data-grade="silver">Silver</button>';
-        html += '<button class="grade-btn bronze" data-grade="bronze">Bronze</button>';
+        html += '<button class="grade-btn gold" data-grade="gold"><svg class="grade-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Gold</button>';
+        html += '<button class="grade-btn silver" data-grade="silver"><svg class="grade-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8 14l-2 8 6-3 6 3-2-8"/></svg>Silver</button>';
+        html += '<button class="grade-btn bronze" data-grade="bronze"><svg class="grade-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8 14l-2 8 6-3 6 3-2-8"/></svg>Bronze</button>';
         html += '</div>';
         area.innerHTML = html;
 
