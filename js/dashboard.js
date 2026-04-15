@@ -189,7 +189,9 @@ SQT.Dashboard = {
             var ft = d.ftm + '/' + d.fta;
             var ftPct = d.fta > 0 ? Math.round(d.ftm / d.fta * 100) + '%' : '—';
             var playerPpp = d.poss > 0 ? (d.pts / d.poss).toFixed(2) : '—';
-            html += '<tr class="player-row" data-num="' + d.num + '" style="cursor:pointer;"><td>#' + d.num + ' ' + d.name + ' &#9656;</td>' +
+            var hcStatus = this._hotColdStatus(d.poss, d.fga, d.fgm, d.to);
+            var hcBadge = this._hotColdBadge(hcStatus);
+            html += '<tr class="player-row" data-num="' + d.num + '" style="cursor:pointer;"><td>#' + d.num + ' ' + d.name + hcBadge + ' &#9656;</td>' +
                 '<td class="num-col">' + d.poss + '</td>' +
                 '<td class="num-col">' + d.pts + '</td>' +
                 '<td class="num-col highlight">' + playerPpp + '</td>' +
@@ -688,7 +690,9 @@ SQT.Dashboard = {
             var fg3Pct = d.fg3a > 0 ? Math.round(d.fg3m / d.fg3a * 100) + '%' : '—';
             var ftPct = d.fta > 0 ? Math.round(d.ftm / d.fta * 100) + '%' : '—';
             var openPct = d.totalFG > 0 ? Math.round(d.open / d.totalFG * 100) + '%' : '—';
-            html += '<tr class="play-row" data-name="' + this._esc(d.name) + '" style="cursor:pointer;"><td>' + this._esc(d.name) + ' &#9656;</td>' +
+            var plHcStatus = this._hotColdStatus(d.poss, d.fga, d.fgm, d.to);
+            var plHcBadge = this._hotColdBadge(plHcStatus);
+            html += '<tr class="play-row" data-name="' + this._esc(d.name) + '" style="cursor:pointer;"><td>' + this._esc(d.name) + plHcBadge + ' &#9656;</td>' +
                 '<td class="num-col">' + d.poss + '</td>' +
                 '<td class="num-col">' + d.pts + '</td>' +
                 '<td class="num-col highlight">' + ppp + '</td>' +
@@ -898,6 +902,25 @@ SQT.Dashboard = {
             e.stopPropagation();
             if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
         });
+    },
+
+    // Returns 'hot', 'cold', or '' based on same logic as tracker player badges
+    _hotColdStatus: function(poss, fga, fgm, to) {
+        if (poss < 3) return '';
+        var toPct = to / poss;
+        if (toPct >= 0.33) return 'cold';
+        if (fga > 0) {
+            var fgPct = fgm / fga;
+            if (fgPct >= 0.66) return 'hot';
+            if (fgPct <= 0.20) return 'cold';
+        }
+        return '';
+    },
+
+    _hotColdBadge: function(status) {
+        if (status === 'hot') return ' <span class="dash-badge dash-hot">\uD83D\uDD25</span>';
+        if (status === 'cold') return ' <span class="dash-badge dash-cold">\u2744\uFE0F</span>';
+        return '';
     },
 
     _esc: function(str) {

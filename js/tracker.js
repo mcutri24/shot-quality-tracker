@@ -46,6 +46,7 @@ SQT.Tracker = {
         this.currentQuarter = lastQ;
 
         this._renderTrackingTop();
+        this._renderMomentumDots();
         this._renderStep();
         this._bindTrackingUI();
 
@@ -175,6 +176,27 @@ SQT.Tracker = {
             badge.classList.add('cold');
             badge.textContent = '\u2744\uFE0F ' + consecutiveMisses;
         }
+
+        // Momentum dots — show last 20 possessions as green/red dots
+        this._renderMomentumDots();
+    },
+
+    _renderMomentumDots: function() {
+        var container = document.getElementById('momentum-dots');
+        if (!container || !this.game) return;
+        var poss = this.game.possessions;
+        if (poss.length === 0) { container.innerHTML = ''; return; }
+
+        var maxDots = 20;
+        var start = Math.max(0, poss.length - maxDots);
+        var html = '';
+        for (var i = start; i < poss.length; i++) {
+            var p = poss[i];
+            var scored = (p.points || 0) > 0;
+            var cls = scored ? 'dot-made' : 'dot-miss';
+            html += '<span class="m-dot ' + cls + '"></span>';
+        }
+        container.innerHTML = html;
     },
 
     _renderStep: function() {
@@ -199,16 +221,20 @@ SQT.Tracker = {
             return;
         }
 
-        // Compute per-player FG stats for hot/cold badges
+        // Compute per-player stats for hot/cold badges
         var playerStats = {};
         if (this.game && this.game.possessions) {
             for (var s = 0; s < this.game.possessions.length; s++) {
                 var pos = this.game.possessions[s];
-                if (pos.shotType === 'free_throws' || pos.shotType === 'turnover') continue;
                 var pid = pos.playerId;
-                if (!playerStats[pid]) playerStats[pid] = { fga: 0, fgm: 0 };
-                playerStats[pid].fga++;
-                if (pos.result === 'made') playerStats[pid].fgm++;
+                if (!playerStats[pid]) playerStats[pid] = { poss: 0, fga: 0, fgm: 0, to: 0 };
+                playerStats[pid].poss++;
+                if (pos.shotType === 'turnover') {
+                    playerStats[pid].to++;
+                } else if (pos.shotType !== 'free_throws') {
+                    playerStats[pid].fga++;
+                    if (pos.result === 'made') playerStats[pid].fgm++;
+                }
             }
         }
 
@@ -219,14 +245,21 @@ SQT.Tracker = {
             var stats = playerStats[p.id];
             var badgeHtml = '';
             var extraCls = '';
-            if (stats && stats.fga >= 3) {
-                var pct = stats.fgm / stats.fga;
-                if (pct >= 0.66) {
-                    badgeHtml = '<span class="player-badge hot-badge">\uD83D\uDD25</span>';
-                    extraCls = ' player-hot';
-                } else if (pct <= 0.20) {
+            if (stats && stats.poss >= 3) {
+                var toPct = stats.to / stats.poss;
+                if (toPct >= 0.33) {
+                    // 33%+ turnovers = cold regardless of shooting
                     badgeHtml = '<span class="player-badge cold-badge">\u2744\uFE0F</span>';
                     extraCls = ' player-cold';
+                } else if (stats.fga > 0) {
+                    var fgPctVal = stats.fgm / stats.fga;
+                    if (fgPctVal >= 0.66) {
+                        badgeHtml = '<span class="player-badge hot-badge">\uD83D\uDD25</span>';
+                        extraCls = ' player-hot';
+                    } else if (fgPctVal <= 0.20) {
+                        badgeHtml = '<span class="player-badge cold-badge">\u2744\uFE0F</span>';
+                        extraCls = ' player-cold';
+                    }
                 }
             }
             html += '<button class="player-btn' + extraCls + '" data-id="' + p.id + '" data-num="' + p.number + '" data-name="' + this._esc(p.name) + '" style="position:relative;">' +
@@ -527,12 +560,16 @@ SQT.Tracker = {
         var text = document.getElementById('splash-text');
         text.textContent = quarter;
         splash.classList.remove('active');
-        void splash.offsetWidth;
-        splash.classList.add('active');
+        // Double rAF ensures browser paints the removal before re-adding
         clearTimeout(this._splashTimer);
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                splash.classList.add('active');
+            });
+        });
         this._splashTimer = setTimeout(function() {
             splash.classList.remove('active');
-        }, 850);
+        }, 900);
     },
 
     _undo: function() {
