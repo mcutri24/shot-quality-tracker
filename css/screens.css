@@ -77,7 +77,8 @@
     color: var(--text-secondary);
     transition: transform 0.1s ease, background 0.15s ease;
 }
-.seasons-corner-btn:active {
+.seasons-corner-btn:active,
+.seasons-corner-btn.tapped {
     background: var(--bg-input);
     color: var(--text-primary);
     transform: scale(0.95);
@@ -173,7 +174,8 @@
     text-align: left;
     transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
-.home-menu .menu-btn:active {
+.home-menu .menu-btn:active,
+.home-menu .menu-btn.tapped {
     background: var(--bg-input);
     transform: scale(0.97);
     box-shadow: 0 0 16px rgba(196, 18, 48, 0.2);
@@ -381,7 +383,8 @@
     border: 2px solid var(--border);
     transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.quarter-selector button:active {
+.quarter-selector button:active,
+.quarter-selector button.tapped {
     transform: scale(0.93);
 }
 .quarter-selector button.active {
@@ -432,7 +435,8 @@
     color: var(--text-primary);
     transition: transform 0.1s ease;
 }
-.bottom-btn:active {
+.bottom-btn:active,
+.bottom-btn.tapped {
     transform: scale(0.95);
 }
 .bottom-btn.undo-btn {
@@ -626,7 +630,8 @@
     min-height: 76px;
     transition: transform 0.1s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.player-grid .player-btn:active {
+.player-grid .player-btn:active,
+.player-grid .player-btn.tapped {
     border-color: var(--accent);
     background: var(--bg-input);
     transform: scale(0.95);
@@ -666,7 +671,8 @@
     text-align: center;
     transition: transform 0.1s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.shot-grid .shot-btn:active {
+.shot-grid .shot-btn:active,
+.shot-grid .shot-btn.tapped {
     border-color: var(--accent);
     transform: scale(0.96);
 }
@@ -696,7 +702,8 @@
     border: 2px solid;
     transition: transform 0.1s ease, box-shadow 0.15s ease;
 }
-.result-grid .result-btn:active {
+.result-grid .result-btn:active,
+.result-grid .result-btn.tapped {
     transform: scale(0.96);
 }
 .result-grid .result-btn.made {
@@ -777,7 +784,8 @@
     border: 2px solid;
     transition: transform 0.1s ease, box-shadow 0.2s ease;
 }
-.grade-grid .grade-btn:active {
+.grade-grid .grade-btn:active,
+.grade-grid .grade-btn.tapped {
     transform: scale(0.96);
 }
 .grade-btn.gold {
@@ -1139,7 +1147,8 @@
     text-align: center;
     transition: transform 0.1s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.play-select-btn:active {
+.play-select-btn:active,
+.play-select-btn.tapped {
     border-color: var(--accent);
     transform: scale(0.96);
 }

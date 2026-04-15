@@ -11,14 +11,14 @@
     border: 1px solid var(--border);
     transition: transform 0.1s ease, box-shadow 0.15s ease;
 }
-.btn:active { background: var(--bg-input); transform: scale(0.97); }
+.btn:active, .btn.tapped { background: var(--bg-input); transform: scale(0.97); }
 .btn-primary {
     background: linear-gradient(135deg, var(--accent) 0%, #a80e28 100%);
     color: #fff;
     border-color: var(--accent);
     box-shadow: 0 2px 12px rgba(196, 18, 48, 0.2);
 }
-.btn-primary:active { background: linear-gradient(135deg, var(--accent-hover) 0%, #8a0b22 100%); transform: scale(0.97); }
+.btn-primary:active, .btn-primary.tapped { background: linear-gradient(135deg, var(--accent-hover) 0%, #8a0b22 100%); transform: scale(0.97); }
 .btn-danger {
     background: var(--red-bg);
     color: var(--red);

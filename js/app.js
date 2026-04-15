@@ -310,6 +310,24 @@ SQT.App = {
     }
 };
 
+// Quick-tap animation: adds .tapped class for 120ms on any button tap
+(function() {
+    var TAP_SELECTORS = '.menu-btn, .player-btn, .shot-btn, .result-btn, .grade-btn, .bottom-btn, .play-select-btn, .quarter-selector button, .btn, .seasons-corner-btn, .btn-sm';
+    document.addEventListener('touchstart', function(e) {
+        var btn = e.target.closest(TAP_SELECTORS);
+        if (!btn) return;
+        btn.classList.add('tapped');
+    }, { passive: true });
+    document.addEventListener('touchend', function(e) {
+        var tapped = document.querySelectorAll('.tapped');
+        for (var i = 0; i < tapped.length; i++) {
+            (function(el) {
+                setTimeout(function() { el.classList.remove('tapped'); }, 120);
+            })(tapped[i]);
+        }
+    }, { passive: true });
+})();
+
 // Boot
 document.addEventListener('DOMContentLoaded', function() {
     SQT.App.init();
