@@ -52,6 +52,7 @@ SQT.Game = {
 
         SQT.App.currentGame = game;
         SQT.Storage.saveGame(game);
+        SQT.Storage.setActiveGame(game.id);
 
         // Clear setup form
         document.getElementById('setup-opponent').value = '';
@@ -92,6 +93,7 @@ SQT.Game = {
         game.result = scoreUs > scoreThem ? 'W' : 'L';
 
         SQT.Storage.saveGame(game);
+        SQT.Storage.setActiveGame(null);
         SQT.App.currentGame = null;
 
         // Reset score inputs

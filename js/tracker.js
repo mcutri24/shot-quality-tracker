@@ -35,12 +35,28 @@ SQT.Tracker = {
 
     start: function(game) {
         this.game = game;
-        this.currentQuarter = 'Q1';
         this.step = 1;
         this.pending = null;
+
+        // Restore quarter from last possession (for game resume)
+        var lastQ = 'Q1';
+        if (game.possessions && game.possessions.length > 0) {
+            lastQ = game.possessions[game.possessions.length - 1].quarter || 'Q1';
+        }
+        this.currentQuarter = lastQ;
+
         this._renderTrackingTop();
         this._renderStep();
         this._bindTrackingUI();
+
+        // Set correct quarter button active
+        var qBtns = document.querySelectorAll('.quarter-selector button');
+        for (var i = 0; i < qBtns.length; i++) {
+            qBtns[i].classList.remove('active');
+            if (qBtns[i].textContent.trim() === lastQ) {
+                qBtns[i].classList.add('active');
+            }
+        }
     },
 
     _bindTrackingUI: function() {

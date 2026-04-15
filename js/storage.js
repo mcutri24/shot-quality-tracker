@@ -8,6 +8,7 @@ SQT.Storage = {
     GAMES_KEY: 'sqt_games',
     SEASONS_KEY: 'sqt_seasons',
     ACTIVE_SEASON_KEY: 'sqt_active_season',
+    ACTIVE_GAME_KEY: 'sqt_active_game',
     PLAYS_KEY: 'sqt_plays',
 
     // ---- Roster ----
@@ -88,6 +89,24 @@ SQT.Storage = {
     getGamesBySeason: function(seasonId) {
         var games = this.getGames();
         return games.filter(function(g) { return g.seasonId === seasonId; });
+    },
+
+    getActiveGame: function() {
+        var id = localStorage.getItem(this.ACTIVE_GAME_KEY);
+        if (!id) return null;
+        var games = this.getGames();
+        for (var i = 0; i < games.length; i++) {
+            if (games[i].id === id) return games[i];
+        }
+        return null;
+    },
+
+    setActiveGame: function(id) {
+        if (id) {
+            localStorage.setItem(this.ACTIVE_GAME_KEY, id);
+        } else {
+            localStorage.removeItem(this.ACTIVE_GAME_KEY);
+        }
     },
 
     // ---- Plays ----

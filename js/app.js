@@ -22,6 +22,7 @@ SQT.App = {
         this.showScreen('home');
         this._updateSeasonRecord();
         this._updateSeasonName();
+        this._checkActiveGame();
 
         console.log('Shot Quality Tracker initialized');
     },
@@ -42,6 +43,9 @@ SQT.App = {
         if (el) {
             el.classList.add('active');
             this.currentScreen = screenId;
+        }
+        if (screenId === 'home') {
+            this._checkActiveGame();
         }
     },
 
@@ -135,6 +139,46 @@ SQT.App = {
         document.getElementById('season-losses').textContent = losses;
         var ppp = totalPoss > 0 ? (totalPts / totalPoss).toFixed(2) : '—';
         document.getElementById('season-ppp').textContent = 'Season PPP: ' + ppp;
+    },
+
+    _checkActiveGame: function() {
+        var game = SQT.Storage.getActiveGame();
+        var banner = document.getElementById('resume-game-banner');
+        if (game && !game.result) {
+            // There's an in-progress game
+            var pts = 0;
+            if (game.possessions) {
+                for (var i = 0; i < game.possessions.length; i++) {
+                    pts += game.possessions[i].points || 0;
+                }
+            }
+            var poss = game.possessions ? game.possessions.length : 0;
+            banner.innerHTML = '<div class="resume-info">' +
+                '<div class="resume-title">Game in progress</div>' +
+                '<div class="resume-detail">' +
+                    (game.location === 'Away' ? '@ ' : 'vs ') + this._esc(game.opponent) +
+                    ' &bull; ' + poss + ' poss &bull; ' + pts + ' pts' +
+                '</div>' +
+            '</div>' +
+            '<span class="resume-arrow">&rarr;</span>';
+            banner.style.display = 'flex';
+            banner.onclick = function() {
+                SQT.App._resumeGame(game);
+            };
+        } else {
+            banner.style.display = 'none';
+            // Clean up stale active game reference
+            if (game && game.result) {
+                SQT.Storage.setActiveGame(null);
+            }
+        }
+    },
+
+    _resumeGame: function(game) {
+        this.currentGame = game;
+        this.showScreen('tracking');
+        if (SQT.Tracker) SQT.Tracker.start(game);
+        this.toast('Game resumed!');
     },
 
     // ---- Season Manager ----
