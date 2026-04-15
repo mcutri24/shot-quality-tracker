@@ -65,9 +65,18 @@ SQT.Game = {
         var game = SQT.App.currentGame;
         if (game) {
             document.getElementById('postgame-opponent').textContent = 'vs ' + game.opponent;
-            // Update labels: NA vs Opponent
             document.getElementById('postgame-us-label').textContent = 'NA';
             document.getElementById('postgame-them-label').textContent = game.opponent;
+
+            // Auto-populate NA score from tracked possessions
+            var totalPts = 0;
+            if (game.possessions) {
+                for (var i = 0; i < game.possessions.length; i++) {
+                    totalPts += game.possessions[i].points || 0;
+                }
+            }
+            document.getElementById('score-us').value = totalPts;
+            document.getElementById('score-them').value = '';
         }
     },
 
