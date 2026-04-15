@@ -458,15 +458,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 4px;
     padding: 6px 12px;
-    min-height: 20px;
+    min-height: 18px;
     flex-shrink: 0;
     flex-wrap: wrap;
 }
 .m-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     display: inline-block;
     animation: dotAppear 0.3s ease forwards;

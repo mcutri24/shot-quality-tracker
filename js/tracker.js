@@ -187,10 +187,8 @@ SQT.Tracker = {
         var poss = this.game.possessions;
         if (poss.length === 0) { container.innerHTML = ''; return; }
 
-        var maxDots = 20;
-        var start = Math.max(0, poss.length - maxDots);
         var html = '';
-        for (var i = start; i < poss.length; i++) {
+        for (var i = 0; i < poss.length; i++) {
             var p = poss[i];
             var scored = (p.points || 0) > 0;
             var cls = scored ? 'dot-made' : 'dot-miss';
