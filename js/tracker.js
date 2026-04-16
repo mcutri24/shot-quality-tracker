@@ -185,14 +185,29 @@ SQT.Tracker = {
         var container = document.getElementById('momentum-dots');
         if (!container || !this.game) return;
         var poss = this.game.possessions;
+        var dotCount = container.children.length;
+
         if (poss.length === 0) { container.innerHTML = ''; return; }
 
+        // Incremental append: dots exist and just need new ones added
+        if (dotCount > 0 && dotCount <= poss.length) {
+            for (var i = dotCount; i < poss.length; i++) {
+                var dot = document.createElement('span');
+                dot.className = 'm-dot ' + ((poss[i].points || 0) > 0 ? 'dot-made' : 'dot-miss');
+                container.appendChild(dot);
+            }
+            return;
+        }
+
+        // Full rebuild (first render, undo, edit, or mismatch)
+        this._rebuildDots(container, poss);
+    },
+
+    _rebuildDots: function(container, poss) {
         var html = '';
         for (var i = 0; i < poss.length; i++) {
-            var p = poss[i];
-            var scored = (p.points || 0) > 0;
-            var cls = scored ? 'dot-made' : 'dot-miss';
-            html += '<span class="m-dot ' + cls + '"></span>';
+            var scored = (poss[i].points || 0) > 0;
+            html += '<span class="m-dot ' + (scored ? 'dot-made' : 'dot-miss') + '"></span>';
         }
         container.innerHTML = html;
     },
@@ -721,7 +736,7 @@ SQT.Tracker = {
             '<h3>Edit Possession #' + (idx + 1) + '</h3>' +
             '<div class="edit-field"><label>Player</label><select id="edit-player">' + playerOptions + '</select></div>' +
             '<div class="edit-field"><label>Shot Type</label><select id="edit-shot">' + shotOptions + '</select></div>' +
-            resultFieldHtml +
+            '<div id="edit-result-container">' + resultFieldHtml + '</div>' +
             '<div class="edit-field"><label>Play</label><select id="edit-play">' + playOptions + '</select></div>' +
             '<div class="edit-field"><label>Grade</label><select id="edit-grade">' + gradeOptions + '</select></div>' +
             '<div class="edit-poss-actions">' +
@@ -731,6 +746,18 @@ SQT.Tracker = {
             '</div></div>';
 
         document.body.appendChild(overlay);
+
+        // Dynamically swap result field when shot type changes
+        document.getElementById('edit-shot').addEventListener('change', function() {
+            var container = document.getElementById('edit-result-container');
+            if (this.value === 'free_throws') {
+                container.innerHTML = '<div class="edit-field"><label>FT Made</label><input type="number" id="edit-ft-made" min="0" value="0" style="width:60px;"></div>' +
+                    '<div class="edit-field"><label>FT Attempts</label><input type="number" id="edit-ft-att" min="0" value="0" style="width:60px;"></div>';
+            } else {
+                container.innerHTML = '<div class="edit-field"><label>Result</label><select id="edit-result">' +
+                    '<option value="made">Made</option><option value="missed">Missed</option></select></div>';
+            }
+        });
 
         overlay.addEventListener('click', function(ev) {
             if (ev.target === overlay) document.body.removeChild(overlay);

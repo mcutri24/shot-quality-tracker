@@ -21,8 +21,9 @@ SQT.Export = {
             possessions = game.possessions || [];
             name = game.opponent + '_' + game.date;
         } else {
-            // Season: all games
-            var games = SQT.Storage.getGames();
+            // Season: active season's games only
+            var activeSeason = SQT.Storage.getActiveSeason();
+            var games = activeSeason ? SQT.Storage.getGamesBySeason(activeSeason.id) : [];
             possessions = [];
             for (var g = 0; g < games.length; g++) {
                 var gm = games[g];

@@ -31,6 +31,19 @@ SQT.Dashboard = {
 
         // Aggregate possessions from season's games
         var games = sid ? SQT.Storage.getGamesBySeason(sid) : [];
+        // Include live game data if it belongs to this season
+        var liveGame = SQT.Storage.getActiveGame();
+        if (liveGame && liveGame.seasonId === sid) {
+            var found = false;
+            for (var lg = 0; lg < games.length; lg++) {
+                if (games[lg].id === liveGame.id) {
+                    games[lg] = liveGame; // replace with latest live data
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) games.push(liveGame);
+        }
         var all = [];
         for (var i = 0; i < games.length; i++) {
             if (games[i].possessions) {
