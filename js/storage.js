@@ -12,18 +12,23 @@ SQT.Storage = {
     LIVE_GAME_KEY: 'sqt_live_game',
     PLAYS_KEY: 'sqt_plays',
 
-    // ---- Roster ----
-    getRoster: function() {
+    // ---- Roster (season-scoped) ----
+    _rosterKey: function(seasonId) {
+        var sid = seasonId || localStorage.getItem(this.ACTIVE_SEASON_KEY);
+        return sid ? 'sqt_roster_' + sid : this.ROSTER_KEY;
+    },
+
+    getRoster: function(seasonId) {
         try {
-            var data = localStorage.getItem(this.ROSTER_KEY);
+            var data = localStorage.getItem(this._rosterKey(seasonId));
             return data ? JSON.parse(data) : [];
         } catch (e) {
             return [];
         }
     },
 
-    saveRoster: function(roster) {
-        localStorage.setItem(this.ROSTER_KEY, JSON.stringify(roster));
+    saveRoster: function(roster, seasonId) {
+        localStorage.setItem(this._rosterKey(seasonId), JSON.stringify(roster));
     },
 
     // ---- Games ----
@@ -142,59 +147,79 @@ SQT.Storage = {
         }
     },
 
-    // ---- Plays ----
-    getPlays: function() {
+    // ---- Plays (season-scoped) ----
+    _playsKey: function(seasonId) {
+        var sid = seasonId || localStorage.getItem(this.ACTIVE_SEASON_KEY);
+        return sid ? 'sqt_plays_' + sid : this.PLAYS_KEY;
+    },
+
+    getPlays: function(seasonId) {
         try {
-            var data = localStorage.getItem(this.PLAYS_KEY);
+            var data = localStorage.getItem(this._playsKey(seasonId));
             return data ? JSON.parse(data) : [];
         } catch (e) {
             return [];
         }
     },
 
-    savePlays: function(plays) {
-        localStorage.setItem(this.PLAYS_KEY, JSON.stringify(plays));
+    savePlays: function(plays, seasonId) {
+        localStorage.setItem(this._playsKey(seasonId), JSON.stringify(plays));
     },
 
-    initDefaultPlays: function() {
-        var plays = this.getPlays();
+    initDefaultPlays: function(seasonId) {
+        var plays = this.getPlays(seasonId);
         if (plays.length > 0) return;
         var defaults = [
             { id: this.uuid(), name: 'Transition', color: 'blue', order: 0, isDefault: true },
             { id: this.uuid(), name: 'No Play', color: 'orange', order: 1, isDefault: true }
         ];
-        this.savePlays(defaults);
+        this.savePlays(defaults, seasonId);
     },
 
     // One-time migration: tag existing games with a default season
     migrate: function() {
         var seasons = this.getSeasons();
-        if (seasons.length > 0) return; // already migrated
+        if (seasons.length === 0) {
+            var games = this.getGames();
+            if (games.length === 0) return;
 
-        var games = this.getGames();
-        if (games.length === 0) {
-            // No games, no migration needed — user will create first season
-            return;
-        }
+            var defaultSeason = {
+                id: this.uuid(),
+                name: 'Default Season',
+                createdAt: new Date().toISOString(),
+                endedAt: null,
+                isActive: true
+            };
+            this.saveSeasons([defaultSeason]);
+            this.setActiveSeason(defaultSeason.id);
 
-        // Create a default season for existing data
-        var defaultSeason = {
-            id: this.uuid(),
-            name: 'Default Season',
-            createdAt: new Date().toISOString(),
-            endedAt: null,
-            isActive: true
-        };
-        this.saveSeasons([defaultSeason]);
-        this.setActiveSeason(defaultSeason.id);
-
-        // Tag all existing games
-        for (var i = 0; i < games.length; i++) {
-            if (!games[i].seasonId) {
-                games[i].seasonId = defaultSeason.id;
+            for (var i = 0; i < games.length; i++) {
+                if (!games[i].seasonId) games[i].seasonId = defaultSeason.id;
             }
+            this.saveGames(games);
         }
-        this.saveGames(games);
+
+        // Migrate global roster/plays to season-scoped keys
+        this._migrateRosterPlays();
+    },
+
+    _migrateRosterPlays: function() {
+        if (localStorage.getItem('sqt_roster_migrated')) return;
+        var sid = localStorage.getItem(this.ACTIVE_SEASON_KEY);
+        if (!sid) return;
+
+        // Move global roster to active season if season key doesn't exist yet
+        var globalRoster = localStorage.getItem(this.ROSTER_KEY);
+        if (globalRoster && !localStorage.getItem('sqt_roster_' + sid)) {
+            localStorage.setItem('sqt_roster_' + sid, globalRoster);
+        }
+
+        var globalPlays = localStorage.getItem(this.PLAYS_KEY);
+        if (globalPlays && !localStorage.getItem('sqt_plays_' + sid)) {
+            localStorage.setItem('sqt_plays_' + sid, globalPlays);
+        }
+
+        localStorage.setItem('sqt_roster_migrated', '1');
     },
 
     // ---- Utility ----

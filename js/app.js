@@ -279,6 +279,9 @@ SQT.App = {
                 }
                 SQT.Storage.saveSeasons(seasons2);
                 SQT.Storage.setActiveSeason(sid);
+                SQT.Storage.initDefaultPlays(sid);
+                SQT.Roster.init();
+                SQT.Plays.init();
                 SQT.App.toast('Season activated');
                 self._renderSeasons();
             });
@@ -301,6 +304,9 @@ SQT.App = {
                     // Delete games for this season
                     var allGames = SQT.Storage.getGames();
                     SQT.Storage.saveGames(allGames.filter(function(g) { return g.seasonId !== sid; }));
+                    // Delete season roster and plays
+                    localStorage.removeItem('sqt_roster_' + sid);
+                    localStorage.removeItem('sqt_plays_' + sid);
                     // Delete season
                     var seasons2 = SQT.Storage.getSeasons();
                     SQT.Storage.saveSeasons(seasons2.filter(function(s2) { return s2.id !== sid; }));
@@ -331,6 +337,13 @@ SQT.App = {
         seasons.push(newSeason);
         SQT.Storage.saveSeasons(seasons);
         SQT.Storage.setActiveSeason(newSeason.id);
+
+        // Initialize default plays for new season
+        SQT.Storage.initDefaultPlays(newSeason.id);
+
+        // Re-init roster and plays modules for the new season
+        SQT.Roster.init();
+        SQT.Plays.init();
 
         SQT.App.toast('Season created!');
         this._renderSeasons();

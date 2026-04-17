@@ -605,9 +605,9 @@ SQT.Dashboard = {
 
     _byGrade: function(poss) {
         var grades = {
-            gold: { poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0 },
-            silver: { poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0 },
-            bronze: { poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0 }
+            gold: { poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, to: 0 },
+            silver: { poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, to: 0 },
+            bronze: { poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, to: 0 }
         };
         var totalPoss = poss.length;
         for (var i = 0; i < poss.length; i++) {
@@ -616,7 +616,9 @@ SQT.Dashboard = {
             if (!g) continue;
             g.poss++;
             g.pts += p.points || 0;
-            if (p.shotType === 'free_throws') {
+            if (p.shotType === 'turnover') {
+                g.to++;
+            } else if (p.shotType === 'free_throws') {
                 g.ftm += p.ftMade || 0;
                 g.fta += p.ftAttempts || 0;
             } else if (p.shotType !== 'turnover') {
@@ -633,7 +635,7 @@ SQT.Dashboard = {
         var html = '<div style="overflow-x:auto"><table class="stat-table"><thead><tr>' +
             '<th>Grade</th><th class="num-col">Poss</th><th class="num-col">%Tot</th><th class="num-col">FG</th>' +
             '<th class="num-col">FG%</th><th class="num-col">3P</th><th class="num-col">3P%</th><th class="num-col">FT%</th>' +
-            '<th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
+            '<th class="num-col">TO</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
         var order = ['gold', 'silver', 'bronze'];
         var labels = { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' };
         for (var gi = 0; gi < order.length; gi++) {
@@ -654,6 +656,7 @@ SQT.Dashboard = {
                 '<td class="num-col">' + g3 + '</td>' +
                 '<td class="num-col">' + g3Pct + '</td>' +
                 '<td class="num-col">' + gFtPct + '</td>' +
+                '<td class="num-col">' + d.to + '</td>' +
                 '<td class="num-col">' + d.pts + '</td>' +
                 '<td class="num-col highlight">' + gPpp + '</td></tr>';
         }
@@ -932,10 +935,10 @@ SQT.Dashboard = {
     _hotColdStatus: function(poss, fga, fgm, to) {
         if (poss < 3) return '';
         var toPct = to / poss;
-        if (toPct >= 0.33) return 'cold';
+        if (toPct >= 0.40) return 'cold';
         if (fga > 0) {
             var fgPct = fgm / fga;
-            if (fgPct >= 0.66) return 'hot';
+            if (fgPct >= 0.55) return 'hot';
             if (fgPct <= 0.20) return 'cold';
         }
         return '';

@@ -260,13 +260,13 @@ SQT.Tracker = {
             var extraCls = '';
             if (stats && stats.poss >= 3) {
                 var toPct = stats.to / stats.poss;
-                if (toPct >= 0.33) {
-                    // 33%+ turnovers = cold regardless of shooting
+                if (toPct >= 0.40) {
+                    // 40%+ turnovers = cold regardless of shooting
                     badgeHtml = '<span class="player-badge cold-badge">\u2744\uFE0F</span>';
                     extraCls = ' player-cold';
                 } else if (stats.fga > 0) {
                     var fgPctVal = stats.fgm / stats.fga;
-                    if (fgPctVal >= 0.66) {
+                    if (fgPctVal >= 0.55) {
                         badgeHtml = '<span class="player-badge hot-badge">\uD83D\uDD25</span>';
                         extraCls = ' player-hot';
                     } else if (fgPctVal <= 0.20) {
@@ -574,10 +574,17 @@ SQT.Tracker = {
         var splash = document.getElementById('quarter-splash');
         var text = document.getElementById('splash-text');
         text.textContent = quarter;
+
+        // Force animation restart: remove class, kill running animation, then re-add
         splash.classList.remove('active');
-        // Double rAF ensures browser paints the removal before re-adding
+        splash.style.animation = 'none';
+        text.style.animation = 'none';
         clearTimeout(this._splashTimer);
+
         requestAnimationFrame(function() {
+            // Clear inline overrides so CSS class animations take effect
+            splash.style.animation = '';
+            text.style.animation = '';
             requestAnimationFrame(function() {
                 splash.classList.add('active');
             });

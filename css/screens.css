@@ -1314,7 +1314,7 @@
 }
 .quarter-splash.active {
     display: flex;
-    animation: splashIn 0.8s ease forwards;
+    animation: splashIn 0.8s ease;
 }
 .splash-text {
     font-size: 80px;
@@ -1326,13 +1326,13 @@
     transform: scale(0.5);
 }
 .quarter-splash.active .splash-text {
-    animation: splashTextIn 0.8s ease forwards;
+    animation: splashTextIn 0.8s ease;
 }
 @keyframes splashIn {
     0%   { opacity: 0; }
     20%  { opacity: 1; }
     80%  { opacity: 1; }
-    100% { opacity: 0; display: none; }
+    100% { opacity: 0; }
 }
 @keyframes splashTextIn {
     0%   { opacity: 0; transform: scale(0.5); }
