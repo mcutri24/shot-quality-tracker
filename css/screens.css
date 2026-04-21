@@ -914,15 +914,14 @@
     overflow-x: auto;
 }
 .dashboard-tabs button {
-    flex: 1;
-    padding: 10px 8px;
+    flex: 0 0 auto;
+    padding: 10px 12px;
     background: none;
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
     border-bottom: 2px solid transparent;
-    min-width: 0;
 }
 .dashboard-tabs button.active {
     color: var(--accent);
