@@ -928,6 +928,7 @@
     color: var(--accent);
     border-bottom-color: var(--accent);
 }
+.dashboard-tabs button.wl-tab.hidden { display: none; }
 .dashboard-content {
     flex: 1;
     overflow-y: auto;
@@ -1378,3 +1379,76 @@
 .dash-badge.dash-cold {
     animation: icePulse 1.5s ease-in-out infinite;
 }
+
+/* ===== W/L COMPARISON ===== */
+.wl-compare-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+.wl-compare-header {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.wl-compare-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+.wl-compare-side {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+}
+.wl-compare-side.wl-win { background: rgba(76, 175, 80, 0.12); }
+.wl-compare-side.wl-loss { background: rgba(244, 67, 54, 0.12); }
+.wl-compare-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+.wl-compare-value {
+    font-size: 28px;
+    font-weight: 700;
+}
+.wl-compare-side.wl-win .wl-compare-value { color: var(--green); }
+.wl-compare-side.wl-loss .wl-compare-value { color: var(--red); }
+.wl-compare-vs {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+.wl-stats-grid {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.wl-stat-cell {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+}
+.wl-stat-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin: 4px 0;
+}
+.wl-stat-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.wl-stat-val.wl-better { color: var(--green); }
+.wl-stat-val.wl-worse { color: var(--red); }
+.wl-win-row td:first-child { color: var(--green); }
+.wl-loss-row td:first-child { color: var(--red); }
