@@ -1,3 +1,6 @@
+/* Inter — modern, clean UI font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 /* Dark theme variables and global resets */
 :root {
     /* Newark Academy Minutemen — Crimson, Black & White */
@@ -25,6 +28,11 @@
     --bronze-bg: rgba(217, 119, 6, 0.15);
     --orange: #f97316;
     --purple: #a855f7;
+
+    /* Glass card styles (no backdrop-filter for performance) */
+    --glass-bg: rgba(28, 28, 35, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-highlight: rgba(255, 255, 255, 0.03);
 }
 
 *, *::before, *::after {
@@ -35,15 +43,8 @@
 }
 
 html, body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: var(--bg-primary);
-    background-image:
-        linear-gradient(45deg, #111113 25%, transparent 25%),
-        linear-gradient(-45deg, #111113 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #111113 75%),
-        linear-gradient(-45deg, transparent 75%, #111113 75%);
-    background-size: 4px 4px;
-    background-position: 0 0, 0 2px, 2px -2px, -2px 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: radial-gradient(ellipse at 50% 0%, #1a1a22 0%, var(--bg-primary) 70%);
     color: var(--text-primary);
     height: 100%;
     width: 100%;
