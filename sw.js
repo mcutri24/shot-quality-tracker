@@ -1,4 +1,4 @@
-var CACHE_NAME = 'sqt-v27';
+var CACHE_NAME = 'sqt-v28';
 var ASSETS = [
     './',
     './index.html',
