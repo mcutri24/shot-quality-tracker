@@ -1,9 +1,11 @@
-var CACHE_NAME = 'sqt-v28';
+var CACHE_NAME = 'sqt-v30';
 var ASSETS = [
     './',
     './index.html',
     './manifest.json',
     './icons/na-logo.png',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
     './css/variables.css',
     './css/screens.css',
     './css/components.css',

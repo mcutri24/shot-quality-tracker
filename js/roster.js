@@ -13,6 +13,8 @@ SQT.Roster = {
     },
 
     _bind: function() {
+        if (this._bound) return;
+        this._bound = true;
         var self = this;
         var addBtn = document.getElementById('roster-add-btn');
         var numInput = document.getElementById('roster-num-input');

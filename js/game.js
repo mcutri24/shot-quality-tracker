@@ -33,6 +33,16 @@ SQT.Game = {
             return;
         }
 
+        // Guard: block starting a new game if one is already in progress
+        var existingGame = SQT.Storage.getActiveGame();
+        if (existingGame && !existingGame.result) {
+            if (!confirm('A game vs ' + existingGame.opponent + ' is already in progress. Abandon it and start a new game?')) {
+                return;
+            }
+            // Abandon the in-progress game by clearing the active key
+            SQT.Storage.setActiveGame(null);
+        }
+
         var date = document.getElementById('setup-date').value;
         var locationBtn = document.querySelector('#setup-screen .toggle-group button.active');
         var location = locationBtn ? locationBtn.textContent.trim() : 'Home';
@@ -90,10 +100,9 @@ SQT.Game = {
 
         game.finalScoreUs = scoreUs;
         game.finalScoreThem = scoreThem;
-        game.result = scoreUs > scoreThem ? 'W' : 'L';
+        game.result = scoreUs > scoreThem ? 'W' : (scoreUs < scoreThem ? 'L' : 'T');
 
-        SQT.Storage.setActiveGame(null); // flushes live game to full list
-        SQT.Storage.saveGame(game); // now saves final state to full list
+        SQT.Storage.setActiveGame(null); // flushes live game (with result/score set) to full list
         SQT.App.currentGame = null;
 
         // Reset score inputs

@@ -29,10 +29,7 @@ SQT.Export = {
                 var gm = games[g];
                 if (gm.possessions) {
                     for (var p = 0; p < gm.possessions.length; p++) {
-                        var poss = {};
-                        for (var k in gm.possessions[p]) {
-                            poss[k] = gm.possessions[p][k];
-                        }
+                        var poss = Object.assign({}, gm.possessions[p]);
                         poss.opponent = gm.opponent;
                         poss.gameDate = gm.date;
                         poss.gameResult = gm.result || '';
@@ -126,7 +123,12 @@ SQT.Export = {
 
     _csvEsc: function(str) {
         if (!str) return '';
-        if (str.indexOf(',') >= 0 || str.indexOf('"') >= 0) {
+        // Prefix formula-injection characters to prevent Excel formula execution
+        if ('=+-@'.indexOf(str.charAt(0)) >= 0) {
+            str = "'" + str;
+        }
+        // Wrap in quotes if field contains comma, quote, or newline characters
+        if (str.indexOf(',') >= 0 || str.indexOf('"') >= 0 || str.indexOf('\n') >= 0 || str.indexOf('\r') >= 0) {
             return '"' + str.replace(/"/g, '""') + '"';
         }
         return str;
@@ -137,7 +139,10 @@ SQT.Export = {
         var link = document.createElement('a');
         link.download = filename;
         link.href = url;
+        // Append to DOM before clicking — required by Firefox
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }
 };

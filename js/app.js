@@ -24,7 +24,6 @@ SQT.App = {
         this._updateSeasonName();
         this._checkActiveGame();
 
-        console.log('Shot Quality Tracker initialized');
     },
 
     // ---- Screen Navigation ----
@@ -123,11 +122,12 @@ SQT.App = {
     _updateSeasonRecord: function() {
         var active = SQT.Storage.getActiveSeason();
         var games = active ? SQT.Storage.getGamesBySeason(active.id) : [];
-        var wins = 0, losses = 0, totalPts = 0, totalPoss = 0;
+        var wins = 0, losses = 0, ties = 0, totalPts = 0, totalPoss = 0;
         for (var i = 0; i < games.length; i++) {
             var g = games[i];
             if (g.result === 'W') wins++;
             else if (g.result === 'L') losses++;
+            else if (g.result === 'T') ties++;
             if (g.possessions) {
                 totalPoss += g.possessions.length;
                 for (var j = 0; j < g.possessions.length; j++) {
@@ -136,7 +136,7 @@ SQT.App = {
             }
         }
         document.getElementById('season-wins').textContent = wins;
-        document.getElementById('season-losses').textContent = losses;
+        document.getElementById('season-losses').textContent = losses + (ties > 0 ? '-' + ties : '');
         var ppp = totalPoss > 0 ? (totalPts / totalPoss).toFixed(2) : '—';
         document.getElementById('season-ppp').textContent = 'Season PPP: ' + ppp;
     },
@@ -205,10 +205,11 @@ SQT.App = {
             var s = seasons[i];
             var isActive = s.id === activeId;
             var games = SQT.Storage.getGamesBySeason(s.id);
-            var wins = 0, losses = 0;
+            var wins = 0, losses = 0, ties = 0;
             for (var j = 0; j < games.length; j++) {
                 if (games[j].result === 'W') wins++;
                 else if (games[j].result === 'L') losses++;
+                else if (games[j].result === 'T') ties++;
             }
             var statusBadge = isActive
                 ? '<span class="season-badge active">ACTIVE</span>'
@@ -217,7 +218,7 @@ SQT.App = {
             html += '<div class="season-item' + (isActive ? ' active' : '') + '" data-id="' + s.id + '">' +
                 '<div class="season-info">' +
                     '<div class="season-name">' + this._esc(s.name) + ' ' + statusBadge + '</div>' +
-                    '<div class="season-meta">' + games.length + ' game' + (games.length !== 1 ? 's' : '') + ' &bull; ' + wins + 'W-' + losses + 'L</div>' +
+                    '<div class="season-meta">' + games.length + ' game' + (games.length !== 1 ? 's' : '') + ' &bull; ' + wins + 'W-' + losses + 'L' + (ties > 0 ? '-' + ties + 'T' : '') + '</div>' +
                 '</div>' +
                 '<div class="season-actions">';
 
@@ -269,6 +270,11 @@ SQT.App = {
         for (var a = 0; a < actBtns.length; a++) {
             actBtns[a].addEventListener('click', function(ev) {
                 ev.stopPropagation();
+                var liveGame = SQT.Storage.getActiveGame();
+                if (liveGame && !liveGame.result) {
+                    SQT.App.toast('End the current game before switching seasons');
+                    return;
+                }
                 var sid = this.getAttribute('data-id');
                 var seasons2 = SQT.Storage.getSeasons();
                 for (var s2 = 0; s2 < seasons2.length; s2++) {
@@ -318,6 +324,11 @@ SQT.App = {
     },
 
     _createNewSeason: function() {
+        var liveGame = SQT.Storage.getActiveGame();
+        if (liveGame && !liveGame.result) {
+            SQT.App.toast('End the current game before creating a new season');
+            return;
+        }
         var name = prompt('Season name (e.g. 2026-2027 NA Season):');
         if (!name || !name.trim()) return;
 

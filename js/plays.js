@@ -14,6 +14,8 @@ SQT.Plays = {
     },
 
     _bind: function() {
+        if (this._bound) return;
+        this._bound = true;
         var self = this;
         var addBtn = document.getElementById('plays-add-btn');
         var nameInput = document.getElementById('plays-name-input');

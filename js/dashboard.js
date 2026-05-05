@@ -120,6 +120,10 @@ SQT.Dashboard = {
 
     _renderTab: function() {
         var content = document.getElementById('dashboard-content');
+        // Always pull fresh possession data during live tracking to avoid stale snapshot after edits/undos
+        if (this.isLive && this.game) {
+            this.possessions = this.game.possessions || [];
+        }
         var poss = this.possessions;
 
         // Summary bar
@@ -169,13 +173,13 @@ SQT.Dashboard = {
     },
 
     _byPlayer: function(poss) {
-        // Group by player
+        // Group by playerId (not playerNumber) to avoid collisions if two players share a number
         var players = {};
         for (var i = 0; i < poss.length; i++) {
             var p = poss[i];
-            var key = p.playerNumber;
+            var key = p.playerId || p.playerNumber; // fall back to number for legacy possessions without playerId
             if (!players[key]) {
-                players[key] = { num: p.playerNumber, name: p.playerName, poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, to: 0, ftm: 0, fta: 0, gold: 0, silver: 0, bronze: 0 };
+                players[key] = { id: p.playerId || p.playerNumber, num: p.playerNumber, name: p.playerName, poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, to: 0, ftm: 0, fta: 0, gold: 0, silver: 0, bronze: 0 };
             }
             var pl = players[key];
             pl.poss++;
@@ -219,7 +223,7 @@ SQT.Dashboard = {
             var playerPpp = d.poss > 0 ? (d.pts / d.poss).toFixed(2) : '—';
             var hcStatus = this._hotColdStatus(d.poss, d.fga, d.fgm, d.to);
             var hcBadge = this._hotColdBadge(hcStatus);
-            html += '<tr class="player-row" data-num="' + d.num + '" style="cursor:pointer;"><td>#' + d.num + ' ' + d.name + hcBadge + ' &#9656;</td>' +
+            html += '<tr class="player-row" data-id="' + d.id + '" style="cursor:pointer;"><td>#' + d.num + ' ' + d.name + hcBadge + ' &#9656;</td>' +
                 '<td class="num-col">' + d.poss + '</td>' +
                 '<td class="num-col">' + d.pts + '</td>' +
                 '<td class="num-col highlight">' + playerPpp + '</td>' +
@@ -241,8 +245,8 @@ SQT.Dashboard = {
             var rows2 = document.querySelectorAll('.player-row');
             for (var pr = 0; pr < rows2.length; pr++) {
                 rows2[pr].addEventListener('click', function() {
-                    var num = this.getAttribute('data-num');
-                    self._showPlayerDrillDown(num, allPoss);
+                    var id = this.getAttribute('data-id');
+                    self._showPlayerDrillDown(id, allPoss);
                 });
             }
         }, 0);
@@ -250,14 +254,17 @@ SQT.Dashboard = {
         return html;
     },
 
-    _showPlayerDrillDown: function(playerNum, poss) {
-        // Filter possessions for this player
+    _showPlayerDrillDown: function(playerId, poss) {
+        // Filter possessions for this player by playerId (falls back to playerNumber for legacy data)
         var playerPoss = [];
         var playerName = '';
+        var playerNum = '';
         for (var i = 0; i < poss.length; i++) {
-            if (poss[i].playerNumber === playerNum) {
+            var matchId = poss[i].playerId || poss[i].playerNumber;
+            if (matchId === playerId) {
                 playerPoss.push(poss[i]);
                 if (!playerName) playerName = poss[i].playerName;
+                if (!playerNum) playerNum = poss[i].playerNumber;
             }
         }
 
@@ -631,7 +638,7 @@ SQT.Dashboard = {
             } else if (p.shotType === 'free_throws') {
                 g.ftm += p.ftMade || 0;
                 g.fta += p.ftAttempts || 0;
-            } else if (p.shotType !== 'turnover') {
+            } else {
                 g.fga++;
                 if (p.result === 'made') g.fgm++;
                 if (p.shotType === 'open_3' || p.shotType === 'contested_3') {

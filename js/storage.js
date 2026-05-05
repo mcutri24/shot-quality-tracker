@@ -28,7 +28,12 @@ SQT.Storage = {
     },
 
     saveRoster: function(roster, seasonId) {
-        localStorage.setItem(this._rosterKey(seasonId), JSON.stringify(roster));
+        try {
+            localStorage.setItem(this._rosterKey(seasonId), JSON.stringify(roster));
+        } catch (e) {
+            console.error('saveRoster storage error:', e);
+            if (window.SQT && SQT.App) SQT.App.toast('Storage full — data may not be saved');
+        }
     },
 
     // ---- Games ----
@@ -42,14 +47,24 @@ SQT.Storage = {
     },
 
     saveGames: function(games) {
-        localStorage.setItem(this.GAMES_KEY, JSON.stringify(games));
+        try {
+            localStorage.setItem(this.GAMES_KEY, JSON.stringify(games));
+        } catch (e) {
+            console.error('saveGames storage error:', e);
+            if (window.SQT && SQT.App) SQT.App.toast('Storage full — data may not be saved');
+        }
     },
 
     saveGame: function(game) {
         // During live tracking, write only the single game to a dedicated key
         var activeId = localStorage.getItem(this.ACTIVE_GAME_KEY);
         if (activeId && game.id === activeId) {
-            localStorage.setItem(this.LIVE_GAME_KEY, JSON.stringify(game));
+            try {
+                localStorage.setItem(this.LIVE_GAME_KEY, JSON.stringify(game));
+            } catch (e) {
+                console.error('saveGame (live) storage error:', e);
+                if (window.SQT && SQT.App) SQT.App.toast('Storage full — possession may not be saved');
+            }
             return;
         }
         // Non-live save: merge into full games list
@@ -64,7 +79,10 @@ SQT.Storage = {
             var game = JSON.parse(data);
             this._mergeGameToList(game);
             localStorage.removeItem(this.LIVE_GAME_KEY);
-        } catch (e) {}
+        } catch (e) {
+            console.error('flushLiveGame parse/save error:', e);
+            if (window.SQT && SQT.App) SQT.App.toast('Error saving game data — please screenshot before closing');
+        }
     },
 
     _mergeGameToList: function(game) {
@@ -97,7 +115,12 @@ SQT.Storage = {
     },
 
     saveSeasons: function(seasons) {
-        localStorage.setItem(this.SEASONS_KEY, JSON.stringify(seasons));
+        try {
+            localStorage.setItem(this.SEASONS_KEY, JSON.stringify(seasons));
+        } catch (e) {
+            console.error('saveSeasons storage error:', e);
+            if (window.SQT && SQT.App) SQT.App.toast('Storage full — data may not be saved');
+        }
     },
 
     getActiveSeason: function() {
@@ -163,7 +186,12 @@ SQT.Storage = {
     },
 
     savePlays: function(plays, seasonId) {
-        localStorage.setItem(this._playsKey(seasonId), JSON.stringify(plays));
+        try {
+            localStorage.setItem(this._playsKey(seasonId), JSON.stringify(plays));
+        } catch (e) {
+            console.error('savePlays storage error:', e);
+            if (window.SQT && SQT.App) SQT.App.toast('Storage full — data may not be saved');
+        }
     },
 
     initDefaultPlays: function(seasonId) {

@@ -124,14 +124,29 @@ SQT.Tracker = {
 
         var ids = ['mini-poss', 'mini-pts', 'mini-ppp', 'mini-fg'];
         var vals = [total, pts, ppp, fgPct];
+        // Batch: collect elements and identify which need animation restart
+        // Read all current values first, then do all writes to avoid multiple forced reflows
+        var toAnimate = [];
         for (var u = 0; u < ids.length; u++) {
             var el = document.getElementById(ids[u]);
             if (el.textContent !== String(vals[u])) {
-                el.textContent = vals[u];
-                el.classList.remove('bump');
-                void el.offsetWidth; // force reflow
-                el.classList.add('bump');
+                toAnimate.push({ el: el, val: vals[u] });
             }
+        }
+        if (toAnimate.length > 0) {
+            // One read pass: trigger a single reflow by reading offsetWidth once for all elements
+            // eslint-disable-next-line no-unused-expressions
+            toAnimate[0].el.offsetWidth; // single reflow to flush pending style changes
+            for (var a = 0; a < toAnimate.length; a++) {
+                toAnimate[a].el.textContent = toAnimate[a].val;
+                toAnimate[a].el.classList.remove('bump');
+            }
+            // requestAnimationFrame defers the class add until after paint, avoiding layout thrash
+            requestAnimationFrame(function() {
+                for (var b = 0; b < toAnimate.length; b++) {
+                    toAnimate[b].el.classList.add('bump');
+                }
+            });
         }
 
         // Hot/cold streak indicator
@@ -189,8 +204,10 @@ SQT.Tracker = {
 
         if (poss.length === 0) { container.innerHTML = ''; return; }
 
-        // Incremental append: dots exist and just need new ones added
-        if (dotCount > 0 && dotCount <= poss.length) {
+        // Incremental append: dots exist and new possession(s) were added
+        // Only skip rebuild if dotCount is strictly less than poss.length (new possession added)
+        // If dotCount === poss.length, do a full rebuild to catch result edits that changed dot colors
+        if (dotCount > 0 && dotCount < poss.length) {
             for (var i = dotCount; i < poss.length; i++) {
                 var dot = document.createElement('span');
                 dot.className = 'm-dot ' + ((poss[i].points || 0) > 0 ? 'dot-made' : 'dot-miss');
@@ -470,6 +487,10 @@ SQT.Tracker = {
         var plays = SQT.Storage.getPlays();
         var stepNum = this.pending.shotType === 'turnover' ? '3' : '4';
         var html = '<div class="tap-prompt"><span class="step-label">Step ' + stepNum + ':</span> Offensive Play</div>';
+        if (plays.length === 0) {
+            area.innerHTML = html + '<div class="tap-prompt" style="color:var(--text-secondary);font-size:14px;">No plays configured. Go to Manage Plays to add some, or end the game and add plays first.</div>';
+            return;
+        }
         html += '<div class="play-select-grid">';
         for (var i = 0; i < plays.length; i++) {
             var p = plays[i];
@@ -596,6 +617,8 @@ SQT.Tracker = {
 
     _undo: function() {
         if (this.step !== 1) {
+            // Safety guard: if pending is missing mid-flow, reset to step 1
+            if (!this.pending) { this.step = 1; this._renderStep(); return; }
             // Go back a step
             if (this.step === 2) this.step = 1;
             else if (this.step === 3) this.step = 2;
@@ -818,16 +841,24 @@ SQT.Tracker = {
                 p.result = 'missed';
                 p.points = 0;
                 delete p.and1;
+                delete p.and1FtMade;
+                delete p.and1FtAttempts;
             } else if (newShot === 'free_throws') {
                 p.points = p.ftMade || 0;
                 delete p.and1;
+                delete p.and1FtMade;
+                delete p.and1FtAttempts;
             } else {
                 var shotDef = null;
                 for (var s = 0; s < self.SHOT_TYPES.length; s++) {
                     if (self.SHOT_TYPES[s].id === newShot) { shotDef = self.SHOT_TYPES[s]; break; }
                 }
                 var basePoints = (p.result === 'made' && shotDef) ? shotDef.points : 0;
-                // Add And-1 FT bonus if applicable
+                // Add And-1 FT bonus if applicable; if And-1 flag was removed, clean up stale FT fields
+                if (!p.and1) {
+                    delete p.and1FtMade;
+                    delete p.and1FtAttempts;
+                }
                 p.points = basePoints + (p.and1 ? (p.and1FtMade || 0) : 0);
             }
 
