@@ -341,66 +341,7 @@ SQT.Dashboard = {
         }
         html += '</tbody></table></div>';
 
-        // Aggregated by category table
-        var cats = {
-            layups: { label: 'Layups', att: 0, made: 0, pts: 0 },
-            midrange: { label: 'Mid-Range', att: 0, made: 0, pts: 0 },
-            threes: { label: '3-Pointers', att: 0, made: 0, pts: 0 },
-            ft: { label: 'Free Throws', att: 0, made: 0, pts: 0, ftm: 0, fta: 0 },
-            to: { label: 'Turnovers', att: 0, made: 0, pts: 0 }
-        };
-        for (var ci = 0; ci < playerPoss.length; ci++) {
-            var cp = playerPoss[ci];
-            var cat = null;
-            if (cp.shotType === 'open_layup' || cp.shotType === 'contested_layup') cat = cats.layups;
-            else if (cp.shotType === 'open_mid' || cp.shotType === 'contested_mid') cat = cats.midrange;
-            else if (cp.shotType === 'open_3' || cp.shotType === 'contested_3') cat = cats.threes;
-            else if (cp.shotType === 'free_throws') cat = cats.ft;
-            else if (cp.shotType === 'turnover') cat = cats.to;
-            if (!cat) continue;
-            cat.att++;
-            cat.pts += cp.points || 0;
-            if (cp.shotType === 'free_throws') {
-                cat.ftm += cp.ftMade || 0;
-                cat.fta += cp.ftAttempts || 0;
-            } else if (cp.shotType !== 'turnover') {
-                if (cp.result === 'made') cat.made++;
-            }
-            if (cp.and1) { cats.ft.ftm += cp.and1FtMade || 0; cats.ft.fta += cp.and1FtAttempts || 0; }
-        }
-
-        html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
-        html += '<table class="stat-table"><thead><tr>' +
-            '<th>Category</th><th class="num-col">Att</th><th class="num-col">%Tot</th><th class="num-col">Made</th>' +
-            '<th class="num-col">FG%</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
-
-        var catOrder = ['layups', 'midrange', 'threes', 'ft', 'to'];
-        for (var co = 0; co < catOrder.length; co++) {
-            var ck = catOrder[co];
-            var cd = cats[ck];
-            if (cd.att === 0 && !(ck === 'ft' && cd.fta > 0)) continue;
-            var cPctTot = totalPoss > 0 ? Math.round(cd.att / totalPoss * 100) + '%' : '—';
-            var cFgPct, cMadeStr;
-            if (ck === 'ft') {
-                cMadeStr = cd.ftm + '/' + cd.fta;
-                cFgPct = cd.fta > 0 ? Math.round(cd.ftm / cd.fta * 100) + '%' : '—';
-            } else if (ck === 'to') {
-                cMadeStr = '—';
-                cFgPct = '—';
-            } else {
-                cMadeStr = cd.made.toString();
-                cFgPct = cd.att > 0 ? Math.round(cd.made / cd.att * 100) + '%' : '—';
-            }
-            var cPpp = cd.att > 0 ? (cd.pts / cd.att).toFixed(2) : '—';
-            html += '<tr><td>' + cd.label + '</td>' +
-                '<td class="num-col">' + cd.att + '</td>' +
-                '<td class="num-col">' + cPctTot + '</td>' +
-                '<td class="num-col">' + cMadeStr + '</td>' +
-                '<td class="num-col">' + cFgPct + '</td>' +
-                '<td class="num-col">' + cd.pts + '</td>' +
-                '<td class="num-col highlight">' + cPpp + '</td></tr>';
-        }
-        html += '</tbody></table>';
+        html += this._buildCategoryTableHtml(playerPoss, totalPoss);
 
         // Grade breakdown
         var grades = { gold: 0, silver: 0, bronze: 0 };
@@ -488,66 +429,7 @@ SQT.Dashboard = {
         }
         html += '</tbody></table>';
 
-        // Aggregated 5-category table
-        var cats = {
-            layups: { label: 'Layups', att: 0, made: 0, pts: 0 },
-            midrange: { label: 'Mid-Range', att: 0, made: 0, pts: 0 },
-            threes: { label: '3-Pointers', att: 0, made: 0, pts: 0 },
-            ft: { label: 'Free Throws', att: 0, made: 0, pts: 0, ftm: 0, fta: 0 },
-            to: { label: 'Turnovers', att: 0, made: 0, pts: 0 }
-        };
-        for (var ci = 0; ci < poss.length; ci++) {
-            var cp = poss[ci];
-            var cat = null;
-            if (cp.shotType === 'open_layup' || cp.shotType === 'contested_layup') cat = cats.layups;
-            else if (cp.shotType === 'open_mid' || cp.shotType === 'contested_mid') cat = cats.midrange;
-            else if (cp.shotType === 'open_3' || cp.shotType === 'contested_3') cat = cats.threes;
-            else if (cp.shotType === 'free_throws') cat = cats.ft;
-            else if (cp.shotType === 'turnover') cat = cats.to;
-            if (!cat) continue;
-            cat.att++;
-            cat.pts += cp.points || 0;
-            if (cp.shotType === 'free_throws') {
-                cat.ftm += cp.ftMade || 0;
-                cat.fta += cp.ftAttempts || 0;
-            } else if (cp.shotType !== 'turnover') {
-                if (cp.result === 'made') cat.made++;
-            }
-            if (cp.and1) { cats.ft.ftm += cp.and1FtMade || 0; cats.ft.fta += cp.and1FtAttempts || 0; }
-        }
-
-        html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
-        html += '<table class="stat-table"><thead><tr>' +
-            '<th>Category</th><th class="num-col">Att</th><th class="num-col">%Tot</th><th class="num-col">Made</th>' +
-            '<th class="num-col">FG%</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
-
-        var catOrder = ['layups', 'midrange', 'threes', 'ft', 'to'];
-        for (var co = 0; co < catOrder.length; co++) {
-            var ck = catOrder[co];
-            var cd = cats[ck];
-            if (cd.att === 0 && !(ck === 'ft' && cd.fta > 0)) continue;
-            var cPctTot = totalPoss > 0 ? Math.round(cd.att / totalPoss * 100) + '%' : '—';
-            var cFgPct, cMadeStr;
-            if (ck === 'ft') {
-                cMadeStr = cd.ftm + '/' + cd.fta;
-                cFgPct = cd.fta > 0 ? Math.round(cd.ftm / cd.fta * 100) + '%' : '—';
-            } else if (ck === 'to') {
-                cMadeStr = '—';
-                cFgPct = '—';
-            } else {
-                cMadeStr = cd.made.toString();
-                cFgPct = cd.att > 0 ? Math.round(cd.made / cd.att * 100) + '%' : '—';
-            }
-            var cPpp = cd.att > 0 ? (cd.pts / cd.att).toFixed(2) : '—';
-            html += '<tr><td>' + cd.label + '</td>' +
-                '<td class="num-col">' + cd.att + '</td>' +
-                '<td class="num-col">' + cPctTot + '</td>' +
-                '<td class="num-col">' + cMadeStr + '</td>' +
-                '<td class="num-col">' + cFgPct + '</td>' +
-                '<td class="num-col">' + cd.pts + '</td>' +
-                '<td class="num-col highlight">' + cPpp + '</td></tr>';
-        }
-        html += '</tbody></table>';
+        html += this._buildCategoryTableHtml(poss, totalPoss);
 
         return html;
     },
@@ -865,66 +747,7 @@ SQT.Dashboard = {
         }
         html += '</tbody></table></div>';
 
-        // Aggregated by category
-        var cats = {
-            layups: { label: 'Layups', att: 0, made: 0, pts: 0 },
-            midrange: { label: 'Mid-Range', att: 0, made: 0, pts: 0 },
-            threes: { label: '3-Pointers', att: 0, made: 0, pts: 0 },
-            ft: { label: 'Free Throws', att: 0, made: 0, pts: 0, ftm: 0, fta: 0 },
-            to: { label: 'Turnovers', att: 0, made: 0, pts: 0 }
-        };
-        for (var ci = 0; ci < playPoss.length; ci++) {
-            var cp = playPoss[ci];
-            var cat = null;
-            if (cp.shotType === 'open_layup' || cp.shotType === 'contested_layup') cat = cats.layups;
-            else if (cp.shotType === 'open_mid' || cp.shotType === 'contested_mid') cat = cats.midrange;
-            else if (cp.shotType === 'open_3' || cp.shotType === 'contested_3') cat = cats.threes;
-            else if (cp.shotType === 'free_throws') cat = cats.ft;
-            else if (cp.shotType === 'turnover') cat = cats.to;
-            if (!cat) continue;
-            cat.att++;
-            cat.pts += cp.points || 0;
-            if (cp.shotType === 'free_throws') {
-                cat.ftm += cp.ftMade || 0;
-                cat.fta += cp.ftAttempts || 0;
-            } else if (cp.shotType !== 'turnover') {
-                if (cp.result === 'made') cat.made++;
-            }
-            if (cp.and1) { cats.ft.ftm += cp.and1FtMade || 0; cats.ft.fta += cp.and1FtAttempts || 0; }
-        }
-
-        html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
-        html += '<table class="stat-table"><thead><tr>' +
-            '<th>Category</th><th class="num-col">Att</th><th class="num-col">%Tot</th><th class="num-col">Made</th>' +
-            '<th class="num-col">FG%</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
-
-        var catOrder = ['layups', 'midrange', 'threes', 'ft', 'to'];
-        for (var co = 0; co < catOrder.length; co++) {
-            var ck = catOrder[co];
-            var cd = cats[ck];
-            if (cd.att === 0 && !(ck === 'ft' && cd.fta > 0)) continue;
-            var cPctTot = totalPlayPoss > 0 ? Math.round(cd.att / totalPlayPoss * 100) + '%' : '—';
-            var cFgPct, cMadeStr;
-            if (ck === 'ft') {
-                cMadeStr = cd.ftm + '/' + cd.fta;
-                cFgPct = cd.fta > 0 ? Math.round(cd.ftm / cd.fta * 100) + '%' : '—';
-            } else if (ck === 'to') {
-                cMadeStr = '—';
-                cFgPct = '—';
-            } else {
-                cMadeStr = cd.made.toString();
-                cFgPct = cd.att > 0 ? Math.round(cd.made / cd.att * 100) + '%' : '—';
-            }
-            var cPpp2 = cd.att > 0 ? (cd.pts / cd.att).toFixed(2) : '—';
-            html += '<tr><td>' + cd.label + '</td>' +
-                '<td class="num-col">' + cd.att + '</td>' +
-                '<td class="num-col">' + cPctTot + '</td>' +
-                '<td class="num-col">' + cMadeStr + '</td>' +
-                '<td class="num-col">' + cFgPct + '</td>' +
-                '<td class="num-col">' + cd.pts + '</td>' +
-                '<td class="num-col highlight">' + cPpp2 + '</td></tr>';
-        }
-        html += '</tbody></table>';
+        html += this._buildCategoryTableHtml(playPoss, totalPlayPoss);
 
         // Grade breakdown
         var grades = { gold: 0, silver: 0, bronze: 0 };
@@ -1208,66 +1031,7 @@ SQT.Dashboard = {
         }
         html += '</tbody></table></div>';
 
-        // Aggregated by category
-        var cats = {
-            layups: { label: 'Layups', att: 0, made: 0, pts: 0 },
-            midrange: { label: 'Mid-Range', att: 0, made: 0, pts: 0 },
-            threes: { label: '3-Pointers', att: 0, made: 0, pts: 0 },
-            ft: { label: 'Free Throws', att: 0, made: 0, pts: 0, ftm: 0, fta: 0 },
-            to: { label: 'Turnovers', att: 0, made: 0, pts: 0 }
-        };
-        for (var ci = 0; ci < poss.length; ci++) {
-            var cp = poss[ci];
-            var cat = null;
-            if (cp.shotType === 'open_layup' || cp.shotType === 'contested_layup') cat = cats.layups;
-            else if (cp.shotType === 'open_mid' || cp.shotType === 'contested_mid') cat = cats.midrange;
-            else if (cp.shotType === 'open_3' || cp.shotType === 'contested_3') cat = cats.threes;
-            else if (cp.shotType === 'free_throws') cat = cats.ft;
-            else if (cp.shotType === 'turnover') cat = cats.to;
-            if (!cat) continue;
-            cat.att++;
-            cat.pts += cp.points || 0;
-            if (cp.shotType === 'free_throws') {
-                cat.ftm += cp.ftMade || 0;
-                cat.fta += cp.ftAttempts || 0;
-            } else if (cp.shotType !== 'turnover') {
-                if (cp.result === 'made') cat.made++;
-            }
-            if (cp.and1) { cats.ft.ftm += cp.and1FtMade || 0; cats.ft.fta += cp.and1FtAttempts || 0; }
-        }
-
-        html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
-        html += '<table class="stat-table"><thead><tr>' +
-            '<th>Category</th><th class="num-col">Att</th><th class="num-col">%Tot</th><th class="num-col">Made</th>' +
-            '<th class="num-col">FG%</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
-
-        var catOrder = ['layups', 'midrange', 'threes', 'ft', 'to'];
-        for (var co = 0; co < catOrder.length; co++) {
-            var ck = catOrder[co];
-            var cd = cats[ck];
-            if (cd.att === 0 && !(ck === 'ft' && cd.fta > 0)) continue;
-            var cPctTot = totalPoss > 0 ? Math.round(cd.att / totalPoss * 100) + '%' : '—';
-            var cFgPct, cMadeStr;
-            if (ck === 'ft') {
-                cMadeStr = cd.ftm + '/' + cd.fta;
-                cFgPct = cd.fta > 0 ? Math.round(cd.ftm / cd.fta * 100) + '%' : '—';
-            } else if (ck === 'to') {
-                cMadeStr = '—';
-                cFgPct = '—';
-            } else {
-                cMadeStr = cd.made.toString();
-                cFgPct = cd.att > 0 ? Math.round(cd.made / cd.att * 100) + '%' : '—';
-            }
-            var cPpp = cd.att > 0 ? (cd.pts / cd.att).toFixed(2) : '—';
-            html += '<tr><td>' + cd.label + '</td>' +
-                '<td class="num-col">' + cd.att + '</td>' +
-                '<td class="num-col">' + cPctTot + '</td>' +
-                '<td class="num-col">' + cMadeStr + '</td>' +
-                '<td class="num-col">' + cFgPct + '</td>' +
-                '<td class="num-col">' + cd.pts + '</td>' +
-                '<td class="num-col highlight">' + cPpp + '</td></tr>';
-        }
-        html += '</tbody></table>';
+        html += this._buildCategoryTableHtml(poss, totalPoss);
 
         // Grade breakdown
         var grades = { gold: 0, silver: 0, bronze: 0 };
@@ -1308,6 +1072,68 @@ SQT.Dashboard = {
         if (status === 'hot') return ' <span class="dash-badge dash-hot">\uD83D\uDD25</span>';
         if (status === 'cold') return ' <span class="dash-badge dash-cold">\u2744\uFE0F</span>';
         return '';
+    },
+
+    // Shared helper: builds the "AGGREGATED BY CATEGORY" table HTML used in all drill-downs.
+    _buildCategoryTableHtml: function(poss, totalPoss) {
+        var cats = {
+            layups:   { label: 'Layups',        att: 0, made: 0, pts: 0 },
+            midrange: { label: 'Mid-Range',      att: 0, made: 0, pts: 0 },
+            threes:   { label: '3-Pointers',     att: 0, made: 0, pts: 0 },
+            ft:       { label: 'Free Throws',    att: 0, made: 0, pts: 0, ftm: 0, fta: 0 },
+            to:       { label: 'Turnovers',      att: 0, made: 0, pts: 0 }
+        };
+        for (var ci = 0; ci < poss.length; ci++) {
+            var cp = poss[ci];
+            var cat = null;
+            if (cp.shotType === 'open_layup' || cp.shotType === 'contested_layup') cat = cats.layups;
+            else if (cp.shotType === 'open_mid' || cp.shotType === 'contested_mid') cat = cats.midrange;
+            else if (cp.shotType === 'open_3' || cp.shotType === 'contested_3') cat = cats.threes;
+            else if (cp.shotType === 'free_throws') cat = cats.ft;
+            else if (cp.shotType === 'turnover') cat = cats.to;
+            if (!cat) continue;
+            cat.att++;
+            cat.pts += cp.points || 0;
+            if (cp.shotType === 'free_throws') {
+                cat.ftm += cp.ftMade || 0;
+                cat.fta += cp.ftAttempts || 0;
+            } else if (cp.shotType !== 'turnover') {
+                if (cp.result === 'made') cat.made++;
+            }
+            if (cp.and1) { cats.ft.ftm += cp.and1FtMade || 0; cats.ft.fta += cp.and1FtAttempts || 0; }
+        }
+        var html = '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">AGGREGATED BY CATEGORY</div>';
+        html += '<table class="stat-table"><thead><tr>' +
+            '<th>Category</th><th class="num-col">Att</th><th class="num-col">%Tot</th><th class="num-col">Made</th>' +
+            '<th class="num-col">FG%</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
+        var catOrder = ['layups', 'midrange', 'threes', 'ft', 'to'];
+        for (var co = 0; co < catOrder.length; co++) {
+            var ck = catOrder[co];
+            var cd = cats[ck];
+            if (cd.att === 0 && !(ck === 'ft' && cd.fta > 0)) continue;
+            var cPctTot = totalPoss > 0 ? Math.round(cd.att / totalPoss * 100) + '%' : '—';
+            var cFgPct, cMadeStr;
+            if (ck === 'ft') {
+                cMadeStr = cd.ftm + '/' + cd.fta;
+                cFgPct = cd.fta > 0 ? Math.round(cd.ftm / cd.fta * 100) + '%' : '—';
+            } else if (ck === 'to') {
+                cMadeStr = '—';
+                cFgPct = '—';
+            } else {
+                cMadeStr = cd.made.toString();
+                cFgPct = cd.att > 0 ? Math.round(cd.made / cd.att * 100) + '%' : '—';
+            }
+            var cPpp = cd.att > 0 ? (cd.pts / cd.att).toFixed(2) : '—';
+            html += '<tr><td>' + cd.label + '</td>' +
+                '<td class="num-col">' + cd.att + '</td>' +
+                '<td class="num-col">' + cPctTot + '</td>' +
+                '<td class="num-col">' + cMadeStr + '</td>' +
+                '<td class="num-col">' + cFgPct + '</td>' +
+                '<td class="num-col">' + cd.pts + '</td>' +
+                '<td class="num-col highlight">' + cPpp + '</td></tr>';
+        }
+        html += '</tbody></table>';
+        return html;
     },
 
     _esc: function(str) {

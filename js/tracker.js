@@ -10,6 +10,7 @@ SQT.Tracker = {
     currentQuarter: 'Q1',
     step: 1,         // 1=player, 2=shot, 3=result, 4=play, 5=grade
     pending: null,    // Partial possession being built
+    plays: null,      // Cached plays list for this game (avoid repeated localStorage reads)
 
     SHOT_TYPES: [
         { id: 'open_layup',      label: 'Open Layup',        points: 2 },
@@ -37,6 +38,11 @@ SQT.Tracker = {
         this.game = game;
         this.step = 1;
         this.pending = null;
+        // Cache plays for this game session — plays don't change mid-game
+        this.plays = SQT.Storage.getPlays();
+
+        // Push history state so Android system back gesture can be intercepted
+        history.pushState({ sqtTracking: true }, '');
 
         // Restore quarter from last possession (for game resume)
         var lastQ = 'Q1';
@@ -96,6 +102,20 @@ SQT.Tracker = {
         document.getElementById('tracking-end-btn').onclick = function() {
             if (confirm('End this game?')) {
                 SQT.Game.endGame();
+            }
+        };
+
+        // Intercept Android system back gesture while tracking
+        window.onpopstate = function() {
+            if (SQT.App.currentScreen === 'tracking') {
+                if (confirm('End this game?')) {
+                    SQT.Game.endGame();
+                } else {
+                    // Re-push so the next back gesture is captured again
+                    history.pushState({ sqtTracking: true }, '');
+                }
+            } else {
+                window.onpopstate = null;
             }
         };
     },
@@ -484,7 +504,7 @@ SQT.Tracker = {
 
     // Step 4: Play select
     _renderPlaySelect: function(area) {
-        var plays = SQT.Storage.getPlays();
+        var plays = this.plays || SQT.Storage.getPlays();
         var stepNum = this.pending.shotType === 'turnover' ? '3' : '4';
         var html = '<div class="tap-prompt"><span class="step-label">Step ' + stepNum + ':</span> Offensive Play</div>';
         if (plays.length === 0) {

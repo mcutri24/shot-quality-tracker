@@ -1,4 +1,4 @@
-var CACHE_NAME = 'sqt-v30';
+var CACHE_NAME = 'sqt-v31';
 var ASSETS = [
     './',
     './index.html',
@@ -41,9 +41,18 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
+    // Stale-while-revalidate: return cache immediately, update cache from network in background
     e.respondWith(
-        caches.match(e.request).then(function(cached) {
-            return cached || fetch(e.request);
+        caches.open(CACHE_NAME).then(function(cache) {
+            return cache.match(e.request).then(function(cached) {
+                var networkFetch = fetch(e.request).then(function(response) {
+                    if (response && response.ok) {
+                        cache.put(e.request, response.clone());
+                    }
+                    return response;
+                }).catch(function() { return null; });
+                return cached || networkFetch;
+            });
         })
     );
 });
