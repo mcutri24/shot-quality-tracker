@@ -1517,3 +1517,139 @@
 .wl-stat-val.wl-worse { color: var(--red); }
 .wl-win-row td:first-child { color: var(--green); }
 .wl-loss-row td:first-child { color: var(--red); }
+
+/* ================================================================
+   POSSESSION BREADCRUMB (Proposal #2)
+   ================================================================ */
+.tracking-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    min-height: 26px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-shrink: 0;
+    scrollbar-width: none;
+}
+.tracking-breadcrumb:empty { display: none; }
+.tracking-breadcrumb::-webkit-scrollbar { display: none; }
+.bc-item {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+}
+.bc-sep {
+    color: var(--text-muted);
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+/* ================================================================
+   QUARTER-SEGMENTED MOMENTUM DOTS (Proposal #3)
+   ================================================================ */
+.m-dot-qlabel {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    align-self: center;
+    flex-shrink: 0;
+}
+.m-dot-sep {
+    width: 1px;
+    height: 10px;
+    background: var(--border-light);
+    align-self: center;
+    flex-shrink: 0;
+    margin: 0 3px;
+}
+
+/* ================================================================
+   STICKY TABLE HEADERS (Proposal #5)
+   ================================================================ */
+.stat-table th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    z-index: 1;
+}
+
+/* ================================================================
+   INPUT FOCUS STATES — crimson glow (Proposal #7)
+   ================================================================ */
+.add-player-bar input:focus,
+.modal-box input:focus,
+.form-group input:focus,
+.edit-poss-box input:focus,
+.edit-field select:focus,
+.score-entry .score-team input:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(196, 18, 48, 0.15) !important;
+    outline: none;
+}
+
+/* ================================================================
+   UX FIXES
+   ================================================================ */
+/* Prevent pull-to-refresh on tracking screen */
+#tracking-screen { overscroll-behavior: contain; }
+
+/* Horizontal scroll safety for stat tables on narrow screens */
+.dashboard-content { overflow-x: auto; }
+
+/* Touch target minimums for small action buttons */
+.roster-item .roster-actions button { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.pl-edit { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.top-bar .back-btn,
+.top-bar .action-btn { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+
+/* ================================================================
+   TYPOGRAPHY UPGRADE — Orbitron (display) + JetBrains Mono (stats)
+   To revert: delete this block and the font import in variables.css
+   ================================================================ */
+
+/* --- Orbitron: headings, labels, UI chrome --- */
+.top-bar .title                          { font-family: var(--font-display); font-size: 15px; letter-spacing: 0.04em; }
+#home-screen .app-header h1              { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.02em; }
+.active-season-label                     { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.06em; }
+.season-record-card .label              { font-family: var(--font-display); font-size: 11px; }
+.quarter-selector button                { font-family: var(--font-display); font-size: 14px; letter-spacing: 0.04em; }
+.tap-prompt .step-label                 { font-family: var(--font-display); }
+.result-grid .result-btn                { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.03em; }
+.grade-grid .grade-btn                  { font-family: var(--font-display); font-size: 16px; letter-spacing: 0.04em; }
+.dashboard-tabs button                  { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.04em; }
+.stat-table th                          { font-family: var(--font-display); font-size: 10px; letter-spacing: 0.06em; }
+.summary-hero .lbl                      { font-family: var(--font-display); font-size: 10px; letter-spacing: 0.08em; }
+.summary-stat .lbl                      { font-family: var(--font-display); font-size: 9px; letter-spacing: 0.06em; }
+.form-group label                       { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.06em; }
+.season-badge                           { font-family: var(--font-display); font-size: 9px; letter-spacing: 0.06em; }
+.wl-compare-header                      { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.04em; }
+.wl-stat-label                          { font-family: var(--font-display); font-size: 9px; letter-spacing: 0.06em; }
+.splash-text                            { font-family: var(--font-display); letter-spacing: 0.06em; }
+.edit-field label                       { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.06em; }
+.pl-grade                               { font-family: var(--font-display); letter-spacing: 0.04em; }
+.modal-box h3                           { font-family: var(--font-display); font-size: 15px; letter-spacing: 0.03em; }
+
+/* --- JetBrains Mono: numbers, scores, stats --- */
+.season-record-card .record             { font-family: var(--font-mono); }
+.season-record-card .ppp                { font-family: var(--font-mono); font-size: 12px; }
+.mini-stats .stat-val                   { font-family: var(--font-mono); }
+.player-grid .player-btn .num          { font-family: var(--font-mono); font-size: 20px; }
+.roster-item .jersey                   { font-family: var(--font-mono); }
+.roster-item .player-number            { font-family: var(--font-mono); }
+.ft-counter .ft-val                    { font-family: var(--font-mono); }
+.score-entry .score-team input         { font-family: var(--font-mono); }
+.score-popup                           { font-family: var(--font-mono); }
+.summary-hero .val                     { font-family: var(--font-mono); letter-spacing: -0.02em; }
+.summary-stat .val                     { font-family: var(--font-mono); letter-spacing: -0.01em; }
+.history-item .game-score              { font-family: var(--font-mono); }
+.history-item .game-ppp                { font-family: var(--font-mono); }
+.stat-table .num-col                   { font-family: var(--font-mono); }
+.stat-table .highlight                 { font-family: var(--font-mono); }
+.wl-compare-value                      { font-family: var(--font-mono); }
+.wl-stat-val                           { font-family: var(--font-mono); }
+.pl-result                             { font-family: var(--font-mono); }
+.playlist-item .pl-num                 { font-family: var(--font-mono); }
+.tracking-top .game-info               { font-family: var(--font-mono); font-size: 12px; }

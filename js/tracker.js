@@ -220,29 +220,45 @@ SQT.Tracker = {
         var container = document.getElementById('momentum-dots');
         if (!container || !this.game) return;
         var poss = this.game.possessions;
-        var dotCount = container.children.length;
+        // Use data attribute to track rendered possession count (DOM has separators too)
+        var renderedCount = parseInt(container.dataset.rc || '0');
 
-        if (poss.length === 0) { container.innerHTML = ''; return; }
+        if (poss.length === 0) { container.innerHTML = ''; container.dataset.rc = '0'; return; }
 
-        // Incremental append: dots exist and new possession(s) were added
-        // Only skip rebuild if dotCount is strictly less than poss.length (new possession added)
-        // If dotCount === poss.length, do a full rebuild to catch result edits that changed dot colors
-        if (dotCount > 0 && dotCount < poss.length) {
-            for (var i = dotCount; i < poss.length; i++) {
+        // Incremental: new possession(s) added, no undo, no edit
+        if (renderedCount > 0 && renderedCount < poss.length) {
+            for (var i = renderedCount; i < poss.length; i++) {
+                // New quarter boundary — full rebuild to insert separator
+                if (i > 0 && poss[i].quarter !== poss[i - 1].quarter) {
+                    this._rebuildDots(container, poss);
+                    container.dataset.rc = poss.length;
+                    return;
+                }
                 var dot = document.createElement('span');
                 dot.className = 'm-dot ' + ((poss[i].points || 0) > 0 ? 'dot-made' : 'dot-miss');
                 container.appendChild(dot);
             }
+            container.dataset.rc = poss.length;
             return;
         }
 
-        // Full rebuild (first render, undo, edit, or mismatch)
+        // Full rebuild (first render, undo, edit, or count mismatch)
         this._rebuildDots(container, poss);
+        container.dataset.rc = poss.length;
     },
 
     _rebuildDots: function(container, poss) {
         var html = '';
+        var prevQ = null;
         for (var i = 0; i < poss.length; i++) {
+            var q = poss[i].quarter || 'Q1';
+            if (q !== prevQ) {
+                if (prevQ !== null) {
+                    html += '<span class="m-dot-sep"></span>';
+                }
+                html += '<span class="m-dot-qlabel">' + q + '</span>';
+                prevQ = q;
+            }
             var scored = (poss[i].points || 0) > 0;
             html += '<span class="m-dot ' + (scored ? 'dot-made' : 'dot-miss') + '"></span>';
         }
@@ -250,6 +266,7 @@ SQT.Tracker = {
     },
 
     _renderStep: function() {
+        this._updateBreadcrumb();
         var area = document.getElementById('tap-flow-area');
         switch (this.step) {
             case 1: this._renderPlayerSelect(area); break;
@@ -261,6 +278,43 @@ SQT.Tracker = {
             case 4: this._renderPlaySelect(area); break;
             case 5: this._renderGradeSelect(area); break;
         }
+    },
+
+    _updateBreadcrumb: function() {
+        var container = document.getElementById('tracking-breadcrumb');
+        if (!container) return;
+        if (!this.pending) { container.innerHTML = ''; return; }
+
+        var parts = [];
+        if (this.pending.playerNumber) {
+            parts.push('#' + this.pending.playerNumber + ' ' + (this.pending.playerName || '').split(' ')[0]);
+        }
+        if (this.pending.shotType) {
+            parts.push(this._shotLabelShort(this.pending.shotType));
+        }
+        if (this.pending.result !== undefined) {
+            var r;
+            if (this.pending.shotType === 'free_throws') {
+                r = (this.pending.ftMade || 0) + '/' + (this.pending.ftAttempts || 0) + ' FT';
+            } else if (this.pending.shotType === 'turnover') {
+                r = 'TO';
+            } else if (this.pending.and1) {
+                r = 'And-1 +' + this.pending.points;
+            } else {
+                r = this.pending.result === 'made' ? 'Made' : 'Missed';
+            }
+            parts.push(r);
+        }
+        if (this.pending.playName) {
+            parts.push(this._esc(this.pending.playName));
+        }
+
+        var html = '';
+        for (var i = 0; i < parts.length; i++) {
+            if (i > 0) html += '<span class="bc-sep">›</span>';
+            html += '<span class="bc-item">' + parts[i] + '</span>';
+        }
+        container.innerHTML = html;
     },
 
     // Step 1: Player select
@@ -888,6 +942,16 @@ SQT.Tracker = {
             SQT.App.toast('Possession updated');
             self._showPlayList();
         });
+    },
+
+    _shotLabelShort: function(type) {
+        var map = {
+            'open_layup': 'O.Layup', 'contested_layup': 'C.Layup',
+            'open_mid': 'Open Mid', 'contested_mid': 'C.Mid',
+            'open_3': 'Open 3', 'contested_3': 'Cont.3',
+            'and1': 'And-1', 'free_throws': 'FT', 'turnover': 'Turnover'
+        };
+        return map[type] || type;
     },
 
     _shotLabel: function(type) {
