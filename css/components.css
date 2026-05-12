@@ -131,8 +131,3 @@
     justify-content: center;
 }
 
-/* ================================================================
-   TYPOGRAPHY UPGRADE — see screens.css for full block
-   To revert: delete this block and the font import in variables.css
-   ================================================================ */
-.confirm-box p { font-family: var(--font-body); }

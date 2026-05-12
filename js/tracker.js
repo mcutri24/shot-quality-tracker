@@ -248,19 +248,26 @@ SQT.Tracker = {
     },
 
     _rebuildDots: function(container, poss) {
-        var html = '';
-        var prevQ = null;
+        // Group all possessions by canonical quarter order regardless of logging sequence
+        var ORDER = ['Q1', 'Q2', 'Q3', 'Q4', 'OT'];
+        var groups = {};
         for (var i = 0; i < poss.length; i++) {
             var q = poss[i].quarter || 'Q1';
-            if (q !== prevQ) {
-                if (prevQ !== null) {
-                    html += '<span class="m-dot-sep"></span>';
-                }
-                html += '<span class="m-dot-qlabel">' + q + '</span>';
-                prevQ = q;
+            if (!groups[q]) groups[q] = [];
+            groups[q].push(poss[i]);
+        }
+        var html = '';
+        var first = true;
+        for (var qi = 0; qi < ORDER.length; qi++) {
+            var qKey = ORDER[qi];
+            if (!groups[qKey] || groups[qKey].length === 0) continue;
+            if (!first) html += '<span class="m-dot-sep"></span>';
+            html += '<span class="m-dot-qlabel">' + qKey + '</span>';
+            for (var j = 0; j < groups[qKey].length; j++) {
+                var scored = (groups[qKey][j].points || 0) > 0;
+                html += '<span class="m-dot ' + (scored ? 'dot-made' : 'dot-miss') + '"></span>';
             }
-            var scored = (poss[i].points || 0) > 0;
-            html += '<span class="m-dot ' + (scored ? 'dot-made' : 'dot-miss') + '"></span>';
+            first = false;
         }
         container.innerHTML = html;
     },
@@ -395,7 +402,7 @@ SQT.Tracker = {
 
     // Step 2: Shot type select
     _renderShotSelect: function(area) {
-        var html = '<div class="tap-prompt"><span class="step-label">Step 2:</span> Shot Type — #' + this.pending.playerNumber + ' ' + this.pending.playerName + '</div>';
+        var html = '<div class="tap-prompt"><span class="step-label">Step 2:</span> Shot Type</div>';
         html += '<div class="shot-grid">';
         for (var i = 0; i < this.SHOT_TYPES.length; i++) {
             var s = this.SHOT_TYPES[i];
@@ -439,7 +446,7 @@ SQT.Tracker = {
 
     // Step 3: Result (Made / Missed)
     _renderResultSelect: function(area) {
-        var html = '<div class="tap-prompt"><span class="step-label">Step 3:</span> Result — ' + this.pending.shotLabel + '</div>';
+        var html = '<div class="tap-prompt"><span class="step-label">Step 3:</span> Result</div>';
         html += '<div class="result-grid">';
         html += '<button class="result-btn made">MADE</button>';
         html += '<button class="result-btn missed">MISSED</button>';
@@ -463,7 +470,7 @@ SQT.Tracker = {
 
     // Free throw sub-screen
     _renderFTSelect: function(area) {
-        var html = '<div class="tap-prompt"><span class="step-label">Free Throws</span> — #' + this.pending.playerNumber + '</div>';
+        var html = '<div class="tap-prompt"><span class="step-label">Free Throws</span></div>';
         html += '<div class="ft-screen">';
         html += '<div class="ft-counters">';
         html += '<div class="ft-counter"><div class="ft-val" id="ft-made-val">0</div><div class="ft-btns"><button id="ft-made-minus">−</button><button id="ft-made-plus">+</button></div><div class="ft-label" style="font-size:12px;color:var(--text-secondary);margin-top:4px;">Made</div></div>';
@@ -503,7 +510,7 @@ SQT.Tracker = {
 
     // And-1: Base shot selection
     _renderAnd1ShotSelect: function(area) {
-        var html = '<div class="tap-prompt"><span class="step-label">And-1:</span> What was the shot? — #' + this.pending.playerNumber + '</div>';
+        var html = '<div class="tap-prompt"><span class="step-label">And-1:</span> Shot Type</div>';
         html += '<div class="shot-grid">';
         for (var i = 0; i < this.FG_TYPES.length; i++) {
             var s = this.FG_TYPES[i];
@@ -532,7 +539,7 @@ SQT.Tracker = {
 
     // And-1: Free throw made/missed
     _renderAnd1FTSelect: function(area) {
-        var html = '<div class="tap-prompt"><span class="step-label">And-1 FT:</span> ' + this.pending.shotLabel + ' — #' + this.pending.playerNumber + '</div>';
+        var html = '<div class="tap-prompt"><span class="step-label">And-1 FT:</span> Free Throw</div>';
         html += '<div class="result-grid">';
         html += '<button class="result-btn made">FT MADE</button>';
         html += '<button class="result-btn missed">FT MISSED</button>';
@@ -590,19 +597,8 @@ SQT.Tracker = {
 
     // Step 5: Grade
     _renderGradeSelect: function(area) {
-        var label = this.pending.shotLabel;
-        if (this.pending.shotType === 'free_throws') {
-            label = 'FT: ' + this.pending.result;
-        } else if (this.pending.shotType === 'turnover') {
-            label = 'Turnover';
-        } else if (this.pending.and1) {
-            label += ' And-1 (+' + this.pending.points + ')';
-        } else {
-            label += ' — ' + (this.pending.result === 'made' ? 'Made' : 'Missed');
-        }
-
         var gradeStepNum = this.pending.shotType === 'turnover' ? '4' : '5';
-        var html = '<div class="tap-prompt"><span class="step-label">Step ' + gradeStepNum + ':</span> Possession Grade — ' + label + '</div>';
+        var html = '<div class="tap-prompt"><span class="step-label">Step ' + gradeStepNum + ':</span> Possession Grade</div>';
         html += '<div class="grade-grid">';
         html += '<button class="grade-btn gold" data-grade="gold"><svg class="grade-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Gold</button>';
         html += '<button class="grade-btn silver" data-grade="silver"><svg class="grade-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8 14l-2 8 6-3 6 3-2-8"/></svg>Silver</button>';

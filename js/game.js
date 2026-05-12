@@ -102,7 +102,8 @@ SQT.Game = {
         game.finalScoreThem = scoreThem;
         game.result = scoreUs > scoreThem ? 'W' : (scoreUs < scoreThem ? 'L' : 'T');
 
-        SQT.Storage.setActiveGame(null); // flushes live game (with result/score set) to full list
+        SQT.Storage.saveGame(game);      // write result/score to live key before flushing
+        SQT.Storage.setActiveGame(null); // flushes live game to full list and clears active key
         SQT.App.currentGame = null;
 
         // Reset score inputs
