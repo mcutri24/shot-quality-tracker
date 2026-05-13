@@ -11,6 +11,16 @@ SQT.Dashboard = {
     viewingSeasonId: null, // track which season we're viewing
     seasonGames: [],       // games for current season (used by W/L tab)
 
+    // Module-level constants shared across tab views and drill-down overlays
+    _SHOT_LABELS: {
+        'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
+        'open_mid': 'Open Mid-Range', 'contested_mid': 'Contested Mid-Range',
+        'open_3': 'Open 3', 'contested_3': 'Contested 3',
+        'free_throws': 'Free Throws', 'turnover': 'Turnover'
+    },
+    _SHOT_ORDER: ['open_layup', 'contested_layup', 'open_mid', 'contested_mid', 'open_3', 'contested_3', 'free_throws', 'turnover'],
+    _QUARTER_ORDER: ['Q1', 'Q2', 'Q3', 'Q4', 'OT'],
+
     showGame: function(game, fromTracking) {
         this.game = game;
         this.possessions = game.possessions || [];
@@ -242,7 +252,8 @@ SQT.Dashboard = {
         var self = this;
         var allPoss = poss;
         setTimeout(function() {
-            var rows2 = document.querySelectorAll('.player-row');
+            var container = document.getElementById('dashboard-content');
+            var rows2 = container ? container.querySelectorAll('.player-row') : [];
             for (var pr = 0; pr < rows2.length; pr++) {
                 rows2[pr].addEventListener('click', function() {
                     var id = this.getAttribute('data-id');
@@ -255,127 +266,21 @@ SQT.Dashboard = {
     },
 
     _showPlayerDrillDown: function(playerId, poss) {
-        // Filter possessions for this player by playerId (falls back to playerNumber for legacy data)
-        var playerPoss = [];
-        var playerName = '';
-        var playerNum = '';
+        var filteredPoss = [], playerName = '', playerNum = '';
         for (var i = 0; i < poss.length; i++) {
             var matchId = poss[i].playerId || poss[i].playerNumber;
             if (matchId === playerId) {
-                playerPoss.push(poss[i]);
+                filteredPoss.push(poss[i]);
                 if (!playerName) playerName = poss[i].playerName;
-                if (!playerNum) playerNum = poss[i].playerNumber;
+                if (!playerNum)  playerNum  = poss[i].playerNumber;
             }
         }
-
-        var overlay = document.createElement('div');
-        overlay.className = 'player-drill-overlay';
-
-        var html = '<div class="top-bar">' +
-            '<button class="back-btn" id="drill-close">&larr; Back</button>' +
-            '<span class="title">#' + playerNum + ' ' + playerName + '</span>' +
-            '<span style="width:50px"></span></div>';
-        html += '<div class="player-drill-content">';
-
-        // Shot type breakdown
-        var shotTypes = {};
-        var openCount = 0, contestedCount = 0, totalFG = 0;
-        var labels = {
-            'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
-            'open_mid': 'Open Mid-Range', 'contested_mid': 'Contested Mid-Range',
-            'open_3': 'Open 3', 'contested_3': 'Contested 3',
-            'free_throws': 'Free Throws', 'turnover': 'Turnover'
-        };
-        var order = ['open_layup', 'contested_layup', 'open_mid', 'contested_mid', 'open_3', 'contested_3', 'free_throws', 'turnover'];
-
-        for (var j = 0; j < playerPoss.length; j++) {
-            var p = playerPoss[j];
-            if (!shotTypes[p.shotType]) {
-                shotTypes[p.shotType] = { att: 0, made: 0, pts: 0 };
-            }
-            var st = shotTypes[p.shotType];
-            st.att++;
-            st.pts += p.points || 0;
-            if (p.shotType !== 'free_throws' && p.shotType !== 'turnover') {
-                totalFG++;
-                if (p.result === 'made') st.made++;
-                if (p.shotType.indexOf('open') === 0) openCount++;
-                else contestedCount++;
-            }
-        }
-
-        // Open vs Contested bar
-        var openPct = totalFG > 0 ? Math.round(openCount / totalFG * 100) : 0;
-        var contestedPct = totalFG > 0 ? Math.round(contestedCount / totalFG * 100) : 0;
-        html += '<div style="margin-bottom:12px;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">' +
-            '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">OPEN vs CONTESTED</div>' +
-            '<div style="display:flex;height:28px;border-radius:4px;overflow:hidden;background:var(--bg-input);">' +
-            '<div style="width:' + openPct + '%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;min-width:' + (openPct > 0 ? '36px' : '0') + ';">' + (openPct > 0 ? openPct + '%' : '') + '</div>' +
-            '<div style="width:' + contestedPct + '%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;min-width:' + (contestedPct > 0 ? '36px' : '0') + ';">' + (contestedPct > 0 ? contestedPct + '%' : '') + '</div>' +
-            '</div>' +
-            '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-top:4px;">' +
-            '<span>Open: ' + openCount + '</span><span>Contested: ' + contestedCount + '</span></div></div>';
-
-        // Shot type table
-        html += '<div style="overflow-x:auto"><table class="stat-table"><thead><tr>' +
-            '<th>Shot Type</th><th class="num-col">Att</th><th class="num-col">%Tot</th>' +
-            '<th class="num-col">Made</th><th class="num-col">FG%</th>' +
-            '<th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
-
-        var totalPoss = playerPoss.length;
-        for (var s = 0; s < order.length; s++) {
-            var key = order[s];
-            var d = shotTypes[key];
-            if (!d) continue;
-            var pctOfTotal = totalPoss > 0 ? Math.round(d.att / totalPoss * 100) + '%' : '—';
-            var fgPct2 = (key !== 'free_throws' && key !== 'turnover' && d.att > 0) ? Math.round(d.made / d.att * 100) + '%' : '—';
-            var typePpp = d.att > 0 ? (d.pts / d.att).toFixed(2) : '—';
-            var madeStr = (key === 'free_throws' || key === 'turnover') ? '—' : d.made.toString();
-            html += '<tr><td>' + labels[key] + '</td>' +
-                '<td class="num-col">' + d.att + '</td>' +
-                '<td class="num-col">' + pctOfTotal + '</td>' +
-                '<td class="num-col">' + madeStr + '</td>' +
-                '<td class="num-col">' + fgPct2 + '</td>' +
-                '<td class="num-col">' + d.pts + '</td>' +
-                '<td class="num-col highlight">' + typePpp + '</td></tr>';
-        }
-        html += '</tbody></table></div>';
-
-        html += this._buildCategoryTableHtml(playerPoss, totalPoss);
-
-        // Grade breakdown
-        var grades = { gold: 0, silver: 0, bronze: 0 };
-        for (var g = 0; g < playerPoss.length; g++) {
-            if (playerPoss[g].grade) grades[playerPoss[g].grade]++;
-        }
-        html += '<div style="margin-top:12px;display:flex;gap:8px;">';
-        html += '<div class="summary-stat" style="border-color:var(--gold)"><div class="val" style="color:var(--gold)">' + grades.gold + '</div><div class="lbl">Gold</div></div>';
-        html += '<div class="summary-stat" style="border-color:var(--silver)"><div class="val" style="color:var(--silver)">' + grades.silver + '</div><div class="lbl">Silver</div></div>';
-        html += '<div class="summary-stat" style="border-color:var(--bronze)"><div class="val" style="color:var(--bronze)">' + grades.bronze + '</div><div class="lbl">Bronze</div></div>';
-        html += '</div>';
-
-        html += '</div>';
-        overlay.innerHTML = html;
-        document.body.appendChild(overlay);
-
-        var closeBtn = overlay.querySelector('.back-btn');
-        closeBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-        });
+        this._openDrillOverlay('<span class="title">#' + playerNum + ' ' + playerName + '</span>', filteredPoss, null);
     },
 
     _byType: function(poss) {
         var types = {};
         var openCount = 0, contestedCount = 0, totalShots = 0;
-        var shotTypeOrder = ['open_layup', 'contested_layup', 'open_mid', 'contested_mid', 'open_3', 'contested_3', 'free_throws', 'turnover'];
-        var labels = {
-            'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
-            'open_mid': 'Open Mid-Range', 'contested_mid': 'Contested Mid-Range',
-            'open_3': 'Open 3', 'contested_3': 'Contested 3',
-            'free_throws': 'Free Throws', 'turnover': 'Turnover'
-        };
 
         for (var i = 0; i < poss.length; i++) {
             var p = poss[i];
@@ -411,15 +316,15 @@ SQT.Dashboard = {
             '<th class="num-col">FG%</th><th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
 
         var totalPoss = poss.length;
-        for (var s = 0; s < shotTypeOrder.length; s++) {
-            var key = shotTypeOrder[s];
+        for (var s = 0; s < this._SHOT_ORDER.length; s++) {
+            var key = this._SHOT_ORDER[s];
             var d = types[key];
             if (!d) continue;
             var pctOfTotal = totalPoss > 0 ? Math.round(d.att / totalPoss * 100) + '%' : '—';
             var fgPct = (key !== 'free_throws' && key !== 'turnover' && d.att > 0) ? Math.round(d.made / d.att * 100) + '%' : '—';
             var typePpp = d.poss > 0 ? (d.pts / d.poss).toFixed(2) : '—';
             var madeStr = (key === 'free_throws' || key === 'turnover') ? '—' : d.made.toString();
-            html += '<tr><td>' + labels[key] + '</td>' +
+            html += '<tr><td>' + this._SHOT_LABELS[key] + '</td>' +
                 '<td class="num-col">' + d.att + '</td>' +
                 '<td class="num-col">' + pctOfTotal + '</td>' +
                 '<td class="num-col">' + madeStr + '</td>' +
@@ -503,7 +408,8 @@ SQT.Dashboard = {
         var self = this;
         var allPoss = poss;
         setTimeout(function() {
-            var rows2 = document.querySelectorAll('.quarter-row');
+            var container = document.getElementById('dashboard-content');
+            var rows2 = container ? container.querySelectorAll('.quarter-row') : [];
             for (var pr = 0; pr < rows2.length; pr++) {
                 rows2[pr].addEventListener('click', function() {
                     var q = this.getAttribute('data-quarter');
@@ -577,7 +483,8 @@ SQT.Dashboard = {
         var self = this;
         var allPoss = poss;
         setTimeout(function() {
-            var rows2 = document.querySelectorAll('.grade-row');
+            var container = document.getElementById('dashboard-content');
+            var rows2 = container ? container.querySelectorAll('.grade-row') : [];
             for (var pr = 0; pr < rows2.length; pr++) {
                 rows2[pr].addEventListener('click', function() {
                     var g = this.getAttribute('data-grade');
@@ -662,7 +569,8 @@ SQT.Dashboard = {
         var self = this;
         var allPoss = poss;
         setTimeout(function() {
-            var rows2 = document.querySelectorAll('.play-row');
+            var container = document.getElementById('dashboard-content');
+            var rows2 = container ? container.querySelectorAll('.play-row') : [];
             for (var pr = 0; pr < rows2.length; pr++) {
                 rows2[pr].addEventListener('click', function() {
                     var name = this.getAttribute('data-name');
@@ -675,126 +583,11 @@ SQT.Dashboard = {
     },
 
     _showPlayDrillDown: function(playName, poss) {
-        var playPoss = [];
+        var filteredPoss = [];
         for (var i = 0; i < poss.length; i++) {
-            if ((poss[i].playName || 'Unknown') === playName) {
-                playPoss.push(poss[i]);
-            }
+            if ((poss[i].playName || 'Unknown') === playName) filteredPoss.push(poss[i]);
         }
-
-        var overlay = document.createElement('div');
-        overlay.className = 'player-drill-overlay';
-
-        var html = '<div class="top-bar">' +
-            '<button class="back-btn" id="play-drill-close">&larr; Back</button>' +
-            '<span class="title">' + this._esc(playName) + '</span>' +
-            '<span style="width:50px"></span></div>';
-        html += '<div class="player-drill-content">';
-
-        // Summary stats
-        var totalPts = 0, fgm = 0, fga = 0;
-        for (var si = 0; si < playPoss.length; si++) {
-            totalPts += playPoss[si].points || 0;
-            if (playPoss[si].shotType !== 'free_throws' && playPoss[si].shotType !== 'turnover') {
-                fga++;
-                if (playPoss[si].result === 'made') fgm++;
-            }
-        }
-        var ppp = playPoss.length > 0 ? (totalPts / playPoss.length).toFixed(2) : '—';
-        var fgPct = fga > 0 ? Math.round(fgm / fga * 100) + '%' : '—';
-
-        html += '<div class="summary-hero"><div class="val highlight">' + ppp + '</div><div class="lbl">PPP</div></div>';
-        html += '<div class="summary-bar">' +
-            '<div class="summary-stat"><div class="val">' + playPoss.length + '</div><div class="lbl">Poss</div></div>' +
-            '<div class="summary-stat"><div class="val">' + totalPts + '</div><div class="lbl">Points</div></div>' +
-            '<div class="summary-stat"><div class="val">' + fgPct + '</div><div class="lbl">FG%</div></div>' +
-            '</div>';
-
-        // Open vs Contested bar
-        var openCount = 0, contestedCount = 0, totalFG = 0;
-        var shotTypes = {};
-        var labels = {
-            'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
-            'open_mid': 'Open Mid-Range', 'contested_mid': 'Contested Mid-Range',
-            'open_3': 'Open 3', 'contested_3': 'Contested 3',
-            'free_throws': 'Free Throws', 'turnover': 'Turnover'
-        };
-        var order = ['open_layup', 'contested_layup', 'open_mid', 'contested_mid', 'open_3', 'contested_3', 'free_throws', 'turnover'];
-
-        for (var j = 0; j < playPoss.length; j++) {
-            var p = playPoss[j];
-            if (!shotTypes[p.shotType]) {
-                shotTypes[p.shotType] = { att: 0, made: 0, pts: 0 };
-            }
-            var st = shotTypes[p.shotType];
-            st.att++;
-            st.pts += p.points || 0;
-            if (p.shotType !== 'free_throws' && p.shotType !== 'turnover') {
-                totalFG++;
-                if (p.result === 'made') st.made++;
-                if (p.shotType.indexOf('open') === 0) openCount++;
-                else contestedCount++;
-            }
-        }
-
-        var openPct = totalFG > 0 ? Math.round(openCount / totalFG * 100) : 0;
-        var contestedPct = totalFG > 0 ? Math.round(contestedCount / totalFG * 100) : 0;
-        html += '<div style="margin-bottom:12px;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">' +
-            '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">OPEN vs CONTESTED</div>' +
-            '<div style="display:flex;height:28px;border-radius:4px;overflow:hidden;background:var(--bg-input);">' +
-            '<div style="width:' + openPct + '%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;min-width:' + (openPct > 0 ? '36px' : '0') + ';">' + (openPct > 0 ? openPct + '%' : '') + '</div>' +
-            '<div style="width:' + contestedPct + '%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;min-width:' + (contestedPct > 0 ? '36px' : '0') + ';">' + (contestedPct > 0 ? contestedPct + '%' : '') + '</div>' +
-            '</div>' +
-            '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-top:4px;">' +
-            '<span>Open: ' + openCount + '</span><span>Contested: ' + contestedCount + '</span></div></div>';
-
-        // Shot type table
-        html += '<div style="overflow-x:auto"><table class="stat-table"><thead><tr>' +
-            '<th>Shot Type</th><th class="num-col">Att</th><th class="num-col">%Tot</th>' +
-            '<th class="num-col">Made</th><th class="num-col">FG%</th>' +
-            '<th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
-
-        var totalPlayPoss = playPoss.length;
-        for (var s = 0; s < order.length; s++) {
-            var key = order[s];
-            var d = shotTypes[key];
-            if (!d) continue;
-            var pctOfTotal = totalPlayPoss > 0 ? Math.round(d.att / totalPlayPoss * 100) + '%' : '—';
-            var fgPct2 = (key !== 'free_throws' && key !== 'turnover' && d.att > 0) ? Math.round(d.made / d.att * 100) + '%' : '—';
-            var typePpp = d.att > 0 ? (d.pts / d.att).toFixed(2) : '—';
-            var madeStr = (key === 'free_throws' || key === 'turnover') ? '—' : d.made.toString();
-            html += '<tr><td>' + labels[key] + '</td>' +
-                '<td class="num-col">' + d.att + '</td>' +
-                '<td class="num-col">' + pctOfTotal + '</td>' +
-                '<td class="num-col">' + madeStr + '</td>' +
-                '<td class="num-col">' + fgPct2 + '</td>' +
-                '<td class="num-col">' + d.pts + '</td>' +
-                '<td class="num-col highlight">' + typePpp + '</td></tr>';
-        }
-        html += '</tbody></table></div>';
-
-        html += this._buildCategoryTableHtml(playPoss, totalPlayPoss);
-
-        // Grade breakdown
-        var grades = { gold: 0, silver: 0, bronze: 0 };
-        for (var g = 0; g < playPoss.length; g++) {
-            if (playPoss[g].grade) grades[playPoss[g].grade]++;
-        }
-        html += '<div style="margin-top:12px;display:flex;gap:8px;">';
-        html += '<div class="summary-stat" style="border-color:var(--gold)"><div class="val" style="color:var(--gold)">' + grades.gold + '</div><div class="lbl">Gold</div></div>';
-        html += '<div class="summary-stat" style="border-color:var(--silver)"><div class="val" style="color:var(--silver)">' + grades.silver + '</div><div class="lbl">Silver</div></div>';
-        html += '<div class="summary-stat" style="border-color:var(--bronze)"><div class="val" style="color:var(--bronze)">' + grades.bronze + '</div><div class="lbl">Bronze</div></div>';
-        html += '</div>';
-
-        html += '</div>';
-        overlay.innerHTML = html;
-        document.body.appendChild(overlay);
-
-        overlay.querySelector('.back-btn').addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-        });
+        this._openDrillOverlay('<span class="title">' + this._esc(playName) + '</span>', filteredPoss, null);
     },
 
     _byWL: function() {
@@ -938,7 +731,8 @@ SQT.Dashboard = {
         var wPossRef = winPoss;
         var lPossRef = lossPoss;
         setTimeout(function() {
-            var rows = document.querySelectorAll('.wl-row');
+            var container = document.getElementById('dashboard-content');
+            var rows = container ? container.querySelectorAll('.wl-row') : [];
             for (var r = 0; r < rows.length; r++) {
                 rows[r].addEventListener('click', function() {
                     var result = this.getAttribute('data-result');
@@ -952,39 +746,80 @@ SQT.Dashboard = {
     },
 
     _showWLDrillDown: function(label, poss) {
-        var overlay = document.createElement('div');
-        overlay.className = 'player-drill-overlay';
-
         var colorStyle = label === 'Wins' ? 'color:var(--green)' : 'color:var(--red)';
-        var html = '<div class="top-bar">' +
-            '<button class="back-btn" id="wl-drill-close">&larr; Back</button>' +
-            '<span class="title" style="' + colorStyle + '">' + label + '</span>' +
-            '<span style="width:50px"></span></div>';
-        html += '<div class="player-drill-content">';
+        this._openDrillOverlay('<span class="title" style="' + colorStyle + '">' + label + '</span>', poss, null);
+    },
 
-        // Summary
-        var totalPts = 0, fgm = 0, fga = 0, fg3m = 0, fg3a = 0, ftm = 0, fta = 0;
-        for (var si = 0; si < poss.length; si++) {
-            var sp = poss[si];
-            totalPts += sp.points || 0;
-            if (sp.shotType === 'free_throws') {
-                ftm += sp.ftMade || 0;
-                fta += sp.ftAttempts || 0;
-            } else if (sp.shotType !== 'turnover') {
-                fga++;
-                if (sp.result === 'made') fgm++;
-                if (sp.shotType === 'open_3' || sp.shotType === 'contested_3') {
-                    fg3a++;
-                    if (sp.result === 'made') fg3m++;
-                }
-            }
-            if (sp.and1) { ftm += sp.and1FtMade || 0; fta += sp.and1FtAttempts || 0; }
+    _showQuarterDrillDown: function(quarter, poss) {
+        var filteredPoss = [];
+        for (var i = 0; i < poss.length; i++) {
+            if ((poss[i].quarter || 'Q1') === quarter) filteredPoss.push(poss[i]);
         }
-        var ppp = poss.length > 0 ? (totalPts / poss.length).toFixed(2) : '—';
-        var fgPct = fga > 0 ? Math.round(fgm / fga * 100) + '%' : '—';
-        var fg3Pct = fg3a > 0 ? Math.round(fg3m / fg3a * 100) + '%' : '—';
-        var ftPct = fta > 0 ? Math.round(ftm / fta * 100) + '%' : '—';
+        this._openDrillOverlay('<span class="title">' + quarter + '</span>', filteredPoss, null);
+    },
 
+    _showGradeDrillDown: function(grade, poss) {
+        var gradeLabels = { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' };
+        var gPoss = [];
+        for (var i = 0; i < poss.length; i++) {
+            if (poss[i].grade === grade) gPoss.push(poss[i]);
+        }
+
+        // Quarter distribution extra section (only shown when data spans multiple quarters)
+        var extraHtml = '';
+        var qCounts = {};
+        for (var qi = 0; qi < gPoss.length; qi++) {
+            var qk = gPoss[qi].quarter || 'Q1';
+            qCounts[qk] = (qCounts[qk] || 0) + 1;
+        }
+        if (Object.keys(qCounts).length > 1) {
+            extraHtml += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">BY QUARTER</div>';
+            extraHtml += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+            for (var qo = 0; qo < this._QUARTER_ORDER.length; qo++) {
+                var qKey = this._QUARTER_ORDER[qo];
+                if (!qCounts[qKey]) continue;
+                extraHtml += '<div class="summary-stat"><div class="val">' + qCounts[qKey] + '</div><div class="lbl">' + qKey + '</div></div>';
+            }
+            extraHtml += '</div>';
+        }
+
+        this._openDrillOverlay('<span class="title" style="color:var(--' + grade + ')">' + (gradeLabels[grade] || grade) + '</span>', gPoss, extraHtml || null);
+    },
+
+    // Shared: computes stats + builds the body HTML used by all drill-down overlays.
+    // Returns: summary hero, summary bar, open/contested bar, shot type table, category table, grade breakdown.
+    _buildDrillDownBodyHtml: function(poss) {
+        var html = '';
+        var totalPts = 0, fgm = 0, fga = 0, fg3m = 0, fg3a = 0, ftm = 0, fta = 0;
+        var shotTypes = {};
+        var openCount = 0, contestedCount = 0, totalFG = 0;
+
+        for (var i = 0; i < poss.length; i++) {
+            var p = poss[i];
+            totalPts += p.points || 0;
+            if (!shotTypes[p.shotType]) shotTypes[p.shotType] = { att: 0, made: 0, pts: 0 };
+            var st = shotTypes[p.shotType];
+            st.att++;
+            st.pts += p.points || 0;
+            if (p.shotType === 'free_throws') {
+                ftm += p.ftMade || 0;
+                fta += p.ftAttempts || 0;
+            } else if (p.shotType !== 'turnover') {
+                fga++;
+                if (p.result === 'made') { fgm++; st.made++; }
+                if (p.shotType === 'open_3' || p.shotType === 'contested_3') { fg3a++; if (p.result === 'made') fg3m++; }
+                totalFG++;
+                if (p.shotType.indexOf('open') === 0) openCount++; else contestedCount++;
+            }
+            if (p.and1) { ftm += p.and1FtMade || 0; fta += p.and1FtAttempts || 0; }
+        }
+
+        var ppp = poss.length > 0 ? (totalPts / poss.length).toFixed(2) : '—';
+        var fgPct  = fga  > 0 ? Math.round(fgm  / fga  * 100) + '%' : '—';
+        var fg3Pct = fg3a > 0 ? Math.round(fg3m / fg3a * 100) + '%' : '—';
+        var ftPct  = fta  > 0 ? Math.round(ftm  / fta  * 100) + '%' : '—';
+
+        // Summary hero + bar
         html += '<div class="summary-hero"><div class="val highlight">' + ppp + '</div><div class="lbl">PPP</div></div>';
         html += '<div class="summary-bar">' +
             '<div class="summary-stat"><div class="val">' + poss.length + '</div><div class="lbl">Poss</div></div>' +
@@ -995,32 +830,6 @@ SQT.Dashboard = {
             '</div>';
 
         // Open vs Contested bar
-        var openCount = 0, contestedCount = 0, totalFG = 0;
-        var shotTypes = {};
-        var labels = {
-            'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
-            'open_mid': 'Open Mid-Range', 'contested_mid': 'Contested Mid-Range',
-            'open_3': 'Open 3', 'contested_3': 'Contested 3',
-            'free_throws': 'Free Throws', 'turnover': 'Turnover'
-        };
-        var order = ['open_layup', 'contested_layup', 'open_mid', 'contested_mid', 'open_3', 'contested_3', 'free_throws', 'turnover'];
-
-        for (var j = 0; j < poss.length; j++) {
-            var p = poss[j];
-            if (!shotTypes[p.shotType]) {
-                shotTypes[p.shotType] = { att: 0, made: 0, pts: 0 };
-            }
-            var st = shotTypes[p.shotType];
-            st.att++;
-            st.pts += p.points || 0;
-            if (p.shotType !== 'free_throws' && p.shotType !== 'turnover') {
-                totalFG++;
-                if (p.result === 'made') st.made++;
-                if (p.shotType.indexOf('open') === 0) openCount++;
-                else contestedCount++;
-            }
-        }
-
         var openPct = totalFG > 0 ? Math.round(openCount / totalFG * 100) : 0;
         var contestedPct = totalFG > 0 ? Math.round(contestedCount / totalFG * 100) : 0;
         html += '<div style="margin-bottom:12px;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">' +
@@ -1037,17 +846,16 @@ SQT.Dashboard = {
             '<th>Shot Type</th><th class="num-col">Att</th><th class="num-col">%Tot</th>' +
             '<th class="num-col">Made</th><th class="num-col">FG%</th>' +
             '<th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
-
-        var totalPoss = poss.length;
-        for (var s = 0; s < order.length; s++) {
-            var key = order[s];
+        var n = poss.length;
+        for (var s = 0; s < this._SHOT_ORDER.length; s++) {
+            var key = this._SHOT_ORDER[s];
             var d = shotTypes[key];
             if (!d) continue;
-            var pctOfTotal = totalPoss > 0 ? Math.round(d.att / totalPoss * 100) + '%' : '—';
+            var pctOfTotal = n > 0 ? Math.round(d.att / n * 100) + '%' : '—';
             var fgPct2 = (key !== 'free_throws' && key !== 'turnover' && d.att > 0) ? Math.round(d.made / d.att * 100) + '%' : '—';
             var typePpp = d.att > 0 ? (d.pts / d.att).toFixed(2) : '—';
             var madeStr = (key === 'free_throws' || key === 'turnover') ? '—' : d.made.toString();
-            html += '<tr><td>' + labels[key] + '</td>' +
+            html += '<tr><td>' + this._SHOT_LABELS[key] + '</td>' +
                 '<td class="num-col">' + d.att + '</td>' +
                 '<td class="num-col">' + pctOfTotal + '</td>' +
                 '<td class="num-col">' + madeStr + '</td>' +
@@ -1056,254 +864,41 @@ SQT.Dashboard = {
                 '<td class="num-col highlight">' + typePpp + '</td></tr>';
         }
         html += '</tbody></table></div>';
-
-        html += this._buildCategoryTableHtml(poss, totalPoss);
+        html += this._buildCategoryTableHtml(poss, n);
 
         // Grade breakdown
         var grades = { gold: 0, silver: 0, bronze: 0 };
-        for (var g = 0; g < poss.length; g++) {
-            if (poss[g].grade) grades[poss[g].grade]++;
-        }
+        for (var g = 0; g < poss.length; g++) { if (poss[g].grade) grades[poss[g].grade]++; }
         html += '<div style="margin-top:12px;display:flex;gap:8px;">';
         html += '<div class="summary-stat" style="border-color:var(--gold)"><div class="val" style="color:var(--gold)">' + grades.gold + '</div><div class="lbl">Gold</div></div>';
         html += '<div class="summary-stat" style="border-color:var(--silver)"><div class="val" style="color:var(--silver)">' + grades.silver + '</div><div class="lbl">Silver</div></div>';
         html += '<div class="summary-stat" style="border-color:var(--bronze)"><div class="val" style="color:var(--bronze)">' + grades.bronze + '</div><div class="lbl">Bronze</div></div>';
         html += '</div>';
 
+        return html;
+    },
+
+    // Shared: creates a drill-down overlay with a standard header and body.
+    // titleHtml: the <span class="title"> element HTML.
+    // poss: filtered possessions (shows "No possessions" if empty).
+    // extraHtml: optional additional content appended after the standard body.
+    _openDrillOverlay: function(titleHtml, poss, extraHtml) {
+        var overlay = document.createElement('div');
+        overlay.className = 'player-drill-overlay';
+        var html = '<div class="top-bar"><button class="back-btn">&larr; Back</button>' + titleHtml + '<span style="width:50px"></span></div>';
+        html += '<div class="player-drill-content">';
+        if (!poss || poss.length === 0) {
+            html += '<div style="padding:32px;text-align:center;color:var(--text-muted);">No possessions</div>';
+        } else {
+            html += this._buildDrillDownBodyHtml(poss);
+            if (extraHtml) html += extraHtml;
+        }
         html += '</div>';
         overlay.innerHTML = html;
         document.body.appendChild(overlay);
-
         overlay.querySelector('.back-btn').addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-        });
-    },
-
-    _showQuarterDrillDown: function(quarter, poss) {
-        var qPoss = [];
-        for (var i = 0; i < poss.length; i++) {
-            if ((poss[i].quarter || 'Q1') === quarter) qPoss.push(poss[i]);
-        }
-
-        var overlay = document.createElement('div');
-        overlay.className = 'player-drill-overlay';
-
-        var html = '<div class="top-bar">' +
-            '<button class="back-btn">&larr; Back</button>' +
-            '<span class="title">' + quarter + '</span>' +
-            '<span style="width:50px"></span></div>';
-        html += '<div class="player-drill-content">';
-
-        var totalPts = 0, fgm = 0, fga = 0, fg3m = 0, fg3a = 0, ftm = 0, fta = 0;
-        for (var si = 0; si < qPoss.length; si++) {
-            var sp = qPoss[si];
-            totalPts += sp.points || 0;
-            if (sp.shotType === 'free_throws') { ftm += sp.ftMade || 0; fta += sp.ftAttempts || 0; }
-            else if (sp.shotType !== 'turnover') {
-                fga++;
-                if (sp.result === 'made') fgm++;
-                if (sp.shotType === 'open_3' || sp.shotType === 'contested_3') { fg3a++; if (sp.result === 'made') fg3m++; }
-            }
-            if (sp.and1) { ftm += sp.and1FtMade || 0; fta += sp.and1FtAttempts || 0; }
-        }
-        var ppp = qPoss.length > 0 ? (totalPts / qPoss.length).toFixed(2) : '—';
-        var fgPct = fga > 0 ? Math.round(fgm / fga * 100) + '%' : '—';
-        var fg3Pct = fg3a > 0 ? Math.round(fg3m / fg3a * 100) + '%' : '—';
-        var ftPct = fta > 0 ? Math.round(ftm / fta * 100) + '%' : '—';
-
-        html += '<div class="summary-hero"><div class="val highlight">' + ppp + '</div><div class="lbl">PPP</div></div>';
-        html += '<div class="summary-bar">' +
-            '<div class="summary-stat"><div class="val">' + qPoss.length + '</div><div class="lbl">Poss</div></div>' +
-            '<div class="summary-stat"><div class="val">' + totalPts + '</div><div class="lbl">Points</div></div>' +
-            '<div class="summary-stat"><div class="val">' + fgPct + '</div><div class="lbl">FG%</div></div>' +
-            '<div class="summary-stat"><div class="val">' + fg3Pct + '</div><div class="lbl">3PT%</div></div>' +
-            '<div class="summary-stat"><div class="val">' + ftPct + '</div><div class="lbl">FT%</div></div>' +
-            '</div>';
-
-        var openCount = 0, contestedCount = 0, totalFG = 0;
-        var shotTypes = {};
-        var labels = {
-            'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
-            'open_mid': 'Open Mid-Range', 'contested_mid': 'Contested Mid-Range',
-            'open_3': 'Open 3', 'contested_3': 'Contested 3',
-            'free_throws': 'Free Throws', 'turnover': 'Turnover'
-        };
-        var order = ['open_layup', 'contested_layup', 'open_mid', 'contested_mid', 'open_3', 'contested_3', 'free_throws', 'turnover'];
-        for (var j = 0; j < qPoss.length; j++) {
-            var p = qPoss[j];
-            if (!shotTypes[p.shotType]) shotTypes[p.shotType] = { att: 0, made: 0, pts: 0 };
-            var st = shotTypes[p.shotType];
-            st.att++; st.pts += p.points || 0;
-            if (p.shotType !== 'free_throws' && p.shotType !== 'turnover') {
-                totalFG++;
-                if (p.result === 'made') st.made++;
-                if (p.shotType.indexOf('open') === 0) openCount++; else contestedCount++;
-            }
-        }
-        var openPct = totalFG > 0 ? Math.round(openCount / totalFG * 100) : 0;
-        var contestedPct = totalFG > 0 ? Math.round(contestedCount / totalFG * 100) : 0;
-        html += '<div style="margin-bottom:12px;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">' +
-            '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">OPEN vs CONTESTED</div>' +
-            '<div style="display:flex;height:28px;border-radius:4px;overflow:hidden;background:var(--bg-input);">' +
-            '<div style="width:' + openPct + '%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;min-width:' + (openPct > 0 ? '36px' : '0') + ';">' + (openPct > 0 ? openPct + '%' : '') + '</div>' +
-            '<div style="width:' + contestedPct + '%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;min-width:' + (contestedPct > 0 ? '36px' : '0') + ';">' + (contestedPct > 0 ? contestedPct + '%' : '') + '</div>' +
-            '</div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-top:4px;">' +
-            '<span>Open: ' + openCount + '</span><span>Contested: ' + contestedCount + '</span></div></div>';
-
-        html += '<div style="overflow-x:auto"><table class="stat-table"><thead><tr>' +
-            '<th>Shot Type</th><th class="num-col">Att</th><th class="num-col">%Tot</th>' +
-            '<th class="num-col">Made</th><th class="num-col">FG%</th>' +
-            '<th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
-        var totalQPoss = qPoss.length;
-        for (var s = 0; s < order.length; s++) {
-            var key = order[s];
-            var d = shotTypes[key];
-            if (!d) continue;
-            var pctOfTotal = totalQPoss > 0 ? Math.round(d.att / totalQPoss * 100) + '%' : '—';
-            var fgPct2 = (key !== 'free_throws' && key !== 'turnover' && d.att > 0) ? Math.round(d.made / d.att * 100) + '%' : '—';
-            var typePpp = d.att > 0 ? (d.pts / d.att).toFixed(2) : '—';
-            var madeStr = (key === 'free_throws' || key === 'turnover') ? '—' : d.made.toString();
-            html += '<tr><td>' + labels[key] + '</td><td class="num-col">' + d.att + '</td>' +
-                '<td class="num-col">' + pctOfTotal + '</td><td class="num-col">' + madeStr + '</td>' +
-                '<td class="num-col">' + fgPct2 + '</td><td class="num-col">' + d.pts + '</td>' +
-                '<td class="num-col highlight">' + typePpp + '</td></tr>';
-        }
-        html += '</tbody></table></div>';
-        html += this._buildCategoryTableHtml(qPoss, totalQPoss);
-
-        var grades = { gold: 0, silver: 0, bronze: 0 };
-        for (var g = 0; g < qPoss.length; g++) { if (qPoss[g].grade) grades[qPoss[g].grade]++; }
-        html += '<div style="margin-top:12px;display:flex;gap:8px;">';
-        html += '<div class="summary-stat" style="border-color:var(--gold)"><div class="val" style="color:var(--gold)">' + grades.gold + '</div><div class="lbl">Gold</div></div>';
-        html += '<div class="summary-stat" style="border-color:var(--silver)"><div class="val" style="color:var(--silver)">' + grades.silver + '</div><div class="lbl">Silver</div></div>';
-        html += '<div class="summary-stat" style="border-color:var(--bronze)"><div class="val" style="color:var(--bronze)">' + grades.bronze + '</div><div class="lbl">Bronze</div></div>';
-        html += '</div>';
-
-        html += '</div>';
-        overlay.innerHTML = html;
-        document.body.appendChild(overlay);
-        overlay.querySelector('.back-btn').addEventListener('click', function(e) {
-            e.preventDefault(); e.stopPropagation();
-            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-        });
-    },
-
-    _showGradeDrillDown: function(grade, poss) {
-        var gradeLabels = { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' };
-        var gPoss = [];
-        for (var i = 0; i < poss.length; i++) {
-            if (poss[i].grade === grade) gPoss.push(poss[i]);
-        }
-
-        var overlay = document.createElement('div');
-        overlay.className = 'player-drill-overlay';
-
-        var html = '<div class="top-bar">' +
-            '<button class="back-btn">&larr; Back</button>' +
-            '<span class="title" style="color:var(--' + grade + ')">' + (gradeLabels[grade] || grade) + '</span>' +
-            '<span style="width:50px"></span></div>';
-        html += '<div class="player-drill-content">';
-
-        var totalPts = 0, fgm = 0, fga = 0, fg3m = 0, fg3a = 0, ftm = 0, fta = 0;
-        for (var si = 0; si < gPoss.length; si++) {
-            var sp = gPoss[si];
-            totalPts += sp.points || 0;
-            if (sp.shotType === 'free_throws') { ftm += sp.ftMade || 0; fta += sp.ftAttempts || 0; }
-            else if (sp.shotType !== 'turnover') {
-                fga++;
-                if (sp.result === 'made') fgm++;
-                if (sp.shotType === 'open_3' || sp.shotType === 'contested_3') { fg3a++; if (sp.result === 'made') fg3m++; }
-            }
-            if (sp.and1) { ftm += sp.and1FtMade || 0; fta += sp.and1FtAttempts || 0; }
-        }
-        var ppp = gPoss.length > 0 ? (totalPts / gPoss.length).toFixed(2) : '—';
-        var fgPct = fga > 0 ? Math.round(fgm / fga * 100) + '%' : '—';
-        var fg3Pct = fg3a > 0 ? Math.round(fg3m / fg3a * 100) + '%' : '—';
-        var ftPct = fta > 0 ? Math.round(ftm / fta * 100) + '%' : '—';
-
-        html += '<div class="summary-hero"><div class="val highlight">' + ppp + '</div><div class="lbl">PPP</div></div>';
-        html += '<div class="summary-bar">' +
-            '<div class="summary-stat"><div class="val">' + gPoss.length + '</div><div class="lbl">Poss</div></div>' +
-            '<div class="summary-stat"><div class="val">' + totalPts + '</div><div class="lbl">Points</div></div>' +
-            '<div class="summary-stat"><div class="val">' + fgPct + '</div><div class="lbl">FG%</div></div>' +
-            '<div class="summary-stat"><div class="val">' + fg3Pct + '</div><div class="lbl">3PT%</div></div>' +
-            '<div class="summary-stat"><div class="val">' + ftPct + '</div><div class="lbl">FT%</div></div>' +
-            '</div>';
-
-        var openCount = 0, contestedCount = 0, totalFG = 0;
-        var shotTypes = {};
-        var labels = {
-            'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
-            'open_mid': 'Open Mid-Range', 'contested_mid': 'Contested Mid-Range',
-            'open_3': 'Open 3', 'contested_3': 'Contested 3',
-            'free_throws': 'Free Throws', 'turnover': 'Turnover'
-        };
-        var order = ['open_layup', 'contested_layup', 'open_mid', 'contested_mid', 'open_3', 'contested_3', 'free_throws', 'turnover'];
-        for (var j = 0; j < gPoss.length; j++) {
-            var p = gPoss[j];
-            if (!shotTypes[p.shotType]) shotTypes[p.shotType] = { att: 0, made: 0, pts: 0 };
-            var st = shotTypes[p.shotType];
-            st.att++; st.pts += p.points || 0;
-            if (p.shotType !== 'free_throws' && p.shotType !== 'turnover') {
-                totalFG++;
-                if (p.result === 'made') st.made++;
-                if (p.shotType.indexOf('open') === 0) openCount++; else contestedCount++;
-            }
-        }
-        var openPct = totalFG > 0 ? Math.round(openCount / totalFG * 100) : 0;
-        var contestedPct = totalFG > 0 ? Math.round(contestedCount / totalFG * 100) : 0;
-        html += '<div style="margin-bottom:12px;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">' +
-            '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">OPEN vs CONTESTED</div>' +
-            '<div style="display:flex;height:28px;border-radius:4px;overflow:hidden;background:var(--bg-input);">' +
-            '<div style="width:' + openPct + '%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;min-width:' + (openPct > 0 ? '36px' : '0') + ';">' + (openPct > 0 ? openPct + '%' : '') + '</div>' +
-            '<div style="width:' + contestedPct + '%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;min-width:' + (contestedPct > 0 ? '36px' : '0') + ';">' + (contestedPct > 0 ? contestedPct + '%' : '') + '</div>' +
-            '</div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-top:4px;">' +
-            '<span>Open: ' + openCount + '</span><span>Contested: ' + contestedCount + '</span></div></div>';
-
-        html += '<div style="overflow-x:auto"><table class="stat-table"><thead><tr>' +
-            '<th>Shot Type</th><th class="num-col">Att</th><th class="num-col">%Tot</th>' +
-            '<th class="num-col">Made</th><th class="num-col">FG%</th>' +
-            '<th class="num-col">PTS</th><th class="num-col">PPP</th></tr></thead><tbody>';
-        var totalGPoss = gPoss.length;
-        for (var s = 0; s < order.length; s++) {
-            var key = order[s];
-            var d = shotTypes[key];
-            if (!d) continue;
-            var pctOfTotal = totalGPoss > 0 ? Math.round(d.att / totalGPoss * 100) + '%' : '—';
-            var fgPct2 = (key !== 'free_throws' && key !== 'turnover' && d.att > 0) ? Math.round(d.made / d.att * 100) + '%' : '—';
-            var typePpp = d.att > 0 ? (d.pts / d.att).toFixed(2) : '—';
-            var madeStr = (key === 'free_throws' || key === 'turnover') ? '—' : d.made.toString();
-            html += '<tr><td>' + labels[key] + '</td><td class="num-col">' + d.att + '</td>' +
-                '<td class="num-col">' + pctOfTotal + '</td><td class="num-col">' + madeStr + '</td>' +
-                '<td class="num-col">' + fgPct2 + '</td><td class="num-col">' + d.pts + '</td>' +
-                '<td class="num-col highlight">' + typePpp + '</td></tr>';
-        }
-        html += '</tbody></table></div>';
-        html += this._buildCategoryTableHtml(gPoss, totalGPoss);
-
-        // Quarter distribution for this grade
-        var qOrder = ['Q1', 'Q2', 'Q3', 'Q4', 'OT'];
-        var qCounts = {};
-        for (var qi = 0; qi < gPoss.length; qi++) { var qk = gPoss[qi].quarter || 'Q1'; qCounts[qk] = (qCounts[qk] || 0) + 1; }
-        var hasMultiQ = Object.keys(qCounts).length > 1;
-        if (hasMultiQ) {
-            html += '<div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">BY QUARTER</div>';
-            html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
-            for (var qo = 0; qo < qOrder.length; qo++) {
-                var qKey = qOrder[qo];
-                if (!qCounts[qKey]) continue;
-                html += '<div class="summary-stat"><div class="val">' + qCounts[qKey] + '</div><div class="lbl">' + qKey + '</div></div>';
-            }
-            html += '</div>';
-        }
-
-        html += '</div>';
-        overlay.innerHTML = html;
-        document.body.appendChild(overlay);
-        overlay.querySelector('.back-btn').addEventListener('click', function(e) {
-            e.preventDefault(); e.stopPropagation();
             if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
         });
     },

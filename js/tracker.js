@@ -11,6 +11,8 @@ SQT.Tracker = {
     step: 1,         // 1=player, 2=shot, 3=result, 4=play, 5=grade
     pending: null,    // Partial possession being built
     plays: null,      // Cached plays list for this game (avoid repeated localStorage reads)
+    _dotRenderedCount: 0,  // Tracks how many possessions are rendered in momentum-dots
+    _QUARTER_ORDER: ['Q1', 'Q2', 'Q3', 'Q4', 'OT'],
 
     SHOT_TYPES: [
         { id: 'open_layup',      label: 'Open Layup',        points: 2 },
@@ -220,10 +222,9 @@ SQT.Tracker = {
         var container = document.getElementById('momentum-dots');
         if (!container || !this.game) return;
         var poss = this.game.possessions;
-        // Use data attribute to track rendered possession count (DOM has separators too)
-        var renderedCount = parseInt(container.dataset.rc || '0');
+        var renderedCount = this._dotRenderedCount;
 
-        if (poss.length === 0) { container.innerHTML = ''; container.dataset.rc = '0'; return; }
+        if (poss.length === 0) { container.innerHTML = ''; this._dotRenderedCount = 0; return; }
 
         // Incremental: new possession(s) added, no undo, no edit
         if (renderedCount > 0 && renderedCount < poss.length) {
@@ -231,25 +232,24 @@ SQT.Tracker = {
                 // New quarter boundary — full rebuild to insert separator
                 if (i > 0 && poss[i].quarter !== poss[i - 1].quarter) {
                     this._rebuildDots(container, poss);
-                    container.dataset.rc = poss.length;
+                    this._dotRenderedCount = poss.length;
                     return;
                 }
                 var dot = document.createElement('span');
                 dot.className = 'm-dot ' + ((poss[i].points || 0) > 0 ? 'dot-made' : 'dot-miss');
                 container.appendChild(dot);
             }
-            container.dataset.rc = poss.length;
+            this._dotRenderedCount = poss.length;
             return;
         }
 
         // Full rebuild (first render, undo, edit, or count mismatch)
         this._rebuildDots(container, poss);
-        container.dataset.rc = poss.length;
+        this._dotRenderedCount = poss.length;
     },
 
     _rebuildDots: function(container, poss) {
         // Group all possessions by canonical quarter order regardless of logging sequence
-        var ORDER = ['Q1', 'Q2', 'Q3', 'Q4', 'OT'];
         var groups = {};
         for (var i = 0; i < poss.length; i++) {
             var q = poss[i].quarter || 'Q1';
@@ -258,8 +258,8 @@ SQT.Tracker = {
         }
         var html = '';
         var first = true;
-        for (var qi = 0; qi < ORDER.length; qi++) {
-            var qKey = ORDER[qi];
+        for (var qi = 0; qi < this._QUARTER_ORDER.length; qi++) {
+            var qKey = this._QUARTER_ORDER[qi];
             if (!groups[qKey] || groups[qKey].length === 0) continue;
             if (!first) html += '<span class="m-dot-sep"></span>';
             html += '<span class="m-dot-qlabel">' + qKey + '</span>';
@@ -299,7 +299,7 @@ SQT.Tracker = {
         if (this.pending.shotType) {
             parts.push(this._shotLabelShort(this.pending.shotType));
         }
-        if (this.pending.result !== undefined) {
+        if (this.pending.result) {
             var r;
             if (this.pending.shotType === 'free_throws') {
                 r = (this.pending.ftMade || 0) + '/' + (this.pending.ftAttempts || 0) + ' FT';
