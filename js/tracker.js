@@ -960,6 +960,78 @@ SQT.Tracker = {
         return map[type] || type;
     },
 
+    _renderTimeoutBar: function() {
+        var self = this;
+        var bar = document.getElementById('timeout-bar');
+        if (!bar || !this.game) return;
+
+        // Normalise: legacy games won't have this field
+        if (!this.game.timeouts) {
+            this.game.timeouts = { fullUsed: 0, shortUsed: 0 };
+        }
+        var to = this.game.timeouts;
+
+        var fullTotal  = (this.currentQuarter === 'OT') ? 4 : 3;
+        var shortTotal = 2;
+
+        // Clamp used counts (handles OT→regulation switch)
+        to.fullUsed  = Math.max(0, Math.min(fullTotal,  to.fullUsed));
+        to.shortUsed = Math.max(0, Math.min(shortTotal, to.shortUsed));
+
+        var html = '<div class="to-bar-inner">';
+
+        // Full timeouts group
+        html += '<div class="to-group">';
+        html += '<span class="to-label to-full">FULL</span>';
+        for (var f = 0; f < fullTotal; f++) {
+            var fu = (f < to.fullUsed);
+            html += '<button class="to-pip to-pip-full' + (fu ? ' to-pip-used' : '') + '"' +
+                    ' data-type="full"' +
+                    ' aria-label="Full timeout ' + (f + 1) + (fu ? ' used' : '') + '">' +
+                    '</button>';
+        }
+        html += '</div>';
+
+        // 30-second timeouts group
+        html += '<div class="to-group">';
+        html += '<span class="to-label to-short">30s</span>';
+        for (var s = 0; s < shortTotal; s++) {
+            var su = (s < to.shortUsed);
+            html += '<button class="to-pip to-pip-short' + (su ? ' to-pip-used' : '') + '"' +
+                    ' data-type="short"' +
+                    ' aria-label="30s timeout ' + (s + 1) + (su ? ' used' : '') + '">' +
+                    '</button>';
+        }
+        html += '</div>';
+
+        html += '</div>';
+        bar.innerHTML = html;
+
+        // Bind tap handlers — rebuild each render, old listeners removed with innerHTML replace
+        var pips = bar.querySelectorAll('.to-pip');
+        for (var i = 0; i < pips.length; i++) {
+            pips[i].addEventListener('click', function() {
+                var type   = this.getAttribute('data-type');
+                var isUsed = this.classList.contains('to-pip-used');
+                var fTotal = (self.currentQuarter === 'OT') ? 4 : 3;
+                var sTotal = 2;
+
+                if (type === 'full') {
+                    self.game.timeouts.fullUsed = isUsed
+                        ? Math.max(0, self.game.timeouts.fullUsed - 1)
+                        : Math.min(fTotal, self.game.timeouts.fullUsed + 1);
+                } else {
+                    self.game.timeouts.shortUsed = isUsed
+                        ? Math.max(0, self.game.timeouts.shortUsed - 1)
+                        : Math.min(sTotal, self.game.timeouts.shortUsed + 1);
+                }
+
+                SQT.Storage.saveGame(self.game);
+                self._renderTimeoutBar();
+            });
+        }
+    },
+
     _esc: function(str) {
         var div = document.createElement('div');
         div.textContent = str;
