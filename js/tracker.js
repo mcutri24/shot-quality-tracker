@@ -56,6 +56,7 @@ SQT.Tracker = {
         this._renderTrackingTop();
         this._renderMomentumDots();
         this._renderStep();
+        this._renderTimeoutBar();
         this._bindTrackingUI();
 
         // Set correct quarter button active
@@ -81,6 +82,7 @@ SQT.Tracker = {
                 this.classList.add('active');
                 self.currentQuarter = newQ;
                 self._showQuarterSplash(newQ);
+                self._renderTimeoutBar();
             };
         }
 
