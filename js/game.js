@@ -54,6 +54,7 @@ SQT.Game = {
             date: date,
             location: location,
             possessions: [],
+            timeouts: { fullUsed: 0, shortUsed: 0 },
             finalScoreUs: null,
             finalScoreThem: null,
             result: null,
