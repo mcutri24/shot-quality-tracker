@@ -517,6 +517,53 @@
 .bottom-btn.tapped {
     transform: scale(0.95);
 }
+
+/* ---- Timeout pip strip ---- */
+#timeout-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 4px 16px;
+    background: rgba(21, 21, 23, 0.85);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(46, 46, 54, 0.6);
+    min-height: 52px;
+}
+.to-bar-inner {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+.to-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.to-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-right: 4px;
+    text-transform: uppercase;
+}
+.to-label.to-full  { color: var(--gold); }
+.to-label.to-short { color: #3b82f6; }
+.to-pip {
+    width: 44px;
+    height: 44px;
+    border-radius: 4px;
+    border: none;
+    transition: background 0.15s ease, transform 0.1s ease;
+    flex-shrink: 0;
+}
+.to-pip:active { transform: scale(0.88); }
+.to-pip-full              { background: var(--gold); }
+.to-pip-full.to-pip-used  { background: #475569; }
+.to-pip-short             { background: #3b82f6; }
+.to-pip-short.to-pip-used { background: #475569; }
+
 .bottom-btn.undo-btn {
     background: var(--red-bg);
     border-color: var(--red);
