@@ -996,7 +996,7 @@ SQT.Tracker = {
 
         // 30-second timeouts group
         html += '<div class="to-group">';
-        html += '<span class="to-label to-short">30s</span>';
+        html += '<span class="to-label to-short">30</span>';
         for (var s = 0; s < shortTotal; s++) {
             var su = (s < to.shortUsed);
             html += '<button class="to-pip to-pip-short' + (su ? ' to-pip-used' : '') + '"' +
