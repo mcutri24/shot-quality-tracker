@@ -1051,7 +1051,13 @@ SQT.Tracker = {
                     if (self.SHOT_TYPES[s].id === newShot) { shotDef = self.SHOT_TYPES[s]; break; }
                 }
                 var basePoints = (p.result === 'made' && shotDef) ? shotDef.points : 0;
-                // Add And-1 FT bonus if applicable; if And-1 flag was removed, clean up stale FT fields
+                // H4: Clear and1 data if result changed to missed (can't have And-1 on a miss)
+                if (p.result === 'missed') {
+                    delete p.and1;
+                    delete p.and1FtMade;
+                    delete p.and1FtAttempts;
+                }
+                // Clean up stale And-1 FT fields if and1 flag was already cleared
                 if (!p.and1) {
                     delete p.and1FtMade;
                     delete p.and1FtAttempts;
