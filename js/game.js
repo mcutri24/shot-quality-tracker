@@ -106,6 +106,11 @@ SQT.Game = {
 
         SQT.Storage.saveGame(game);      // write result/score to live key before flushing
         SQT.Storage.setActiveGame(null); // flushes live game to full list and clears active key
+        // Clean up tracker's visibilitychange handler — tracking is done
+        if (SQT.Tracker && SQT.Tracker._visibilityHandler) {
+            document.removeEventListener('visibilitychange', SQT.Tracker._visibilityHandler);
+            SQT.Tracker._visibilityHandler = null;
+        }
         SQT.App.currentGame = null;
 
         // Reset score inputs
