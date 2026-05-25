@@ -1127,8 +1127,7 @@ SQT.Tracker = {
 
         // Full timeouts group
         html += '<div class="to-group">';
-        var fullRemain = fullTotal - to.fullUsed;
-        html += '<span class="to-label to-full">FULL ' + fullRemain + '</span>';
+        html += '<span class="to-label to-full">FULL</span>';
         for (var f = 0; f < fullTotal; f++) {
             var fu = (f < to.fullUsed);
             html += '<button class="to-pip to-pip-full' + (fu ? ' to-pip-used' : '') + '"' +
@@ -1140,8 +1139,7 @@ SQT.Tracker = {
 
         // 30-second timeouts group
         html += '<div class="to-group">';
-        var shortRemain = shortTotal - to.shortUsed;
-        html += '<span class="to-label to-short">30 ' + shortRemain + '</span>';
+        html += '<span class="to-label to-short">30</span>';
         for (var s = 0; s < shortTotal; s++) {
             var su = (s < to.shortUsed);
             html += '<button class="to-pip to-pip-short' + (su ? ' to-pip-used' : '') + '"' +
