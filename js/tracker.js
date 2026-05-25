@@ -13,6 +13,7 @@ SQT.Tracker = {
     plays: null,      // Cached plays list for this game (avoid repeated localStorage reads)
     _dotRenderedCount: 0,  // Tracks how many possessions are rendered in momentum-dots
     _QUARTER_ORDER: ['Q1', 'Q2', 'Q3', 'Q4', 'OT'],
+    _suppressNextClick: false,
 
     SHOT_TYPES: [
         { id: 'open_layup',      label: 'Open Layup',        points: 2 },
@@ -40,6 +41,7 @@ SQT.Tracker = {
         this.game = game;
         this.step = 1;
         this.pending = null;
+        this._suppressNextClick = false;
         // Cache plays for this game session — plays don't change mid-game
         this.plays = SQT.Storage.getPlays();
 
@@ -277,6 +279,10 @@ SQT.Tracker = {
     _renderStep: function() {
         this._updateBreadcrumb();
         var area = document.getElementById('tap-flow-area');
+        var openWidget = area ? area.querySelector('.foul-widget') : null;
+        if (openWidget && typeof openWidget._foulDismiss === 'function') {
+            openWidget._foulDismiss();
+        }
         switch (this.step) {
             case 1: this._renderPlayerSelect(area); break;
             case 2: this._renderShotSelect(area); break;
@@ -438,6 +444,7 @@ SQT.Tracker = {
     },
 
     _showFoulWidget: function(btn) {
+        if (btn.querySelector('.foul-widget')) return;
         var self = this;
         var pid = btn.getAttribute('data-id');
         var num = btn.getAttribute('data-num');
@@ -459,6 +466,12 @@ SQT.Tracker = {
             '</div>';
 
         btn.appendChild(widget);
+
+        widget.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        widget._foulDismiss = dismiss;
 
         function dismiss() {
             if (widget.parentNode === btn) {
