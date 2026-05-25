@@ -500,11 +500,15 @@ SQT.Dashboard = {
         var plays = {};
         for (var i = 0; i < poss.length; i++) {
             var p = poss[i];
-            var name = p.playName || 'Unknown';
-            if (!plays[name]) {
-                plays[name] = { name: name, poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, to: 0, open: 0, totalFG: 0, gold: 0, silver: 0, bronze: 0 };
+            // Group by playId (stable) or fall back to name-prefixed key for legacy possessions
+            var groupKey = p.playId ? p.playId : ('__name__' + (p.playName || 'Unknown'));
+            if (!plays[groupKey]) {
+                plays[groupKey] = { groupKey: groupKey, name: p.playName || 'Unknown', poss: 0, pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, to: 0, open: 0, totalFG: 0, gold: 0, silver: 0, bronze: 0 };
+            } else if (p.playId && p.playName) {
+                // Update name to the latest seen (so renames are reflected in display)
+                plays[groupKey].name = p.playName;
             }
-            var pl = plays[name];
+            var pl = plays[groupKey];
             pl.poss++;
             pl.pts += p.points || 0;
             if (p.shotType === 'turnover') {
@@ -550,7 +554,7 @@ SQT.Dashboard = {
             var openPct = d.totalFG > 0 ? Math.round(d.open / d.totalFG * 100) + '%' : '—';
             var plHcStatus = this._hotColdStatus(d.poss, d.fga, d.fgm, d.to);
             var plHcBadge = this._hotColdBadge(plHcStatus);
-            html += '<tr class="play-row" data-name="' + this._esc(d.name) + '" style="cursor:pointer;"><td>' + this._esc(d.name) + plHcBadge + ' &#9656;</td>' +
+            html += '<tr class="play-row" data-key="' + this._esc(d.groupKey) + '" style="cursor:pointer;"><td>' + this._esc(d.name) + plHcBadge + ' &#9656;</td>' +
                 '<td class="num-col">' + d.poss + '</td>' +
                 '<td class="num-col">' + d.pts + '</td>' +
                 '<td class="num-col highlight">' + ppp + '</td>' +
@@ -573,8 +577,8 @@ SQT.Dashboard = {
             var rows2 = container ? container.querySelectorAll('.play-row') : [];
             for (var pr = 0; pr < rows2.length; pr++) {
                 rows2[pr].addEventListener('click', function() {
-                    var name = this.getAttribute('data-name');
-                    self._showPlayDrillDown(name, allPoss);
+                    var key = this.getAttribute('data-key');
+                    self._showPlayDrillDown(key, allPoss);
                 });
             }
         }, 0);
@@ -582,12 +586,18 @@ SQT.Dashboard = {
         return html;
     },
 
-    _showPlayDrillDown: function(playName, poss) {
+    _showPlayDrillDown: function(groupKey, poss) {
         var filteredPoss = [];
+        var displayName = 'Unknown';
         for (var i = 0; i < poss.length; i++) {
-            if ((poss[i].playName || 'Unknown') === playName) filteredPoss.push(poss[i]);
+            var p = poss[i];
+            var key = p.playId ? p.playId : ('__name__' + (p.playName || 'Unknown'));
+            if (key === groupKey) {
+                filteredPoss.push(p);
+                if (p.playName) displayName = p.playName;
+            }
         }
-        this._openDrillOverlay('<span class="title">' + this._esc(playName) + '</span>', filteredPoss, null);
+        this._openDrillOverlay('<span class="title">' + this._esc(displayName) + '</span>', filteredPoss, null);
     },
 
     _byWL: function() {
