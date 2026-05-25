@@ -391,19 +391,114 @@ SQT.Tracker = {
         var self = this;
         var btns = area.querySelectorAll('.player-btn');
         for (var b = 0; b < btns.length; b++) {
-            btns[b].addEventListener('click', function() {
-                self.pending = {
-                    id: SQT.Storage.uuid(),
-                    quarter: self.currentQuarter,
-                    playerId: this.getAttribute('data-id'),
-                    playerNumber: this.getAttribute('data-num'),
-                    playerName: this.getAttribute('data-name'),
-                    timestamp: new Date().toISOString()
-                };
-                self.step = 2;
-                self._renderStep();
-            });
+            (function(btn) {
+                var pressTimer = null;
+                var startX = 0, startY = 0;
+
+                btn.addEventListener('pointerdown', function(e) {
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    pressTimer = setTimeout(function() {
+                        pressTimer = null;
+                        self._suppressNextClick = true;
+                        self._showFoulWidget(btn);
+                    }, 500);
+                });
+
+                btn.addEventListener('pointermove', function(e) {
+                    if (pressTimer && (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8)) {
+                        clearTimeout(pressTimer);
+                        pressTimer = null;
+                    }
+                });
+
+                btn.addEventListener('pointerup', function() {
+                    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+                });
+
+                btn.addEventListener('pointercancel', function() {
+                    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+                });
+
+                btn.addEventListener('click', function() {
+                    if (self._suppressNextClick) { self._suppressNextClick = false; return; }
+                    self.pending = {
+                        id: SQT.Storage.uuid(),
+                        quarter: self.currentQuarter,
+                        playerId: btn.getAttribute('data-id'),
+                        playerNumber: btn.getAttribute('data-num'),
+                        playerName: btn.getAttribute('data-name'),
+                        timestamp: new Date().toISOString()
+                    };
+                    self.step = 2;
+                    self._renderStep();
+                });
+            })(btns[b]);
         }
+    },
+
+    _showFoulWidget: function(btn) {
+        var self = this;
+        var pid = btn.getAttribute('data-id');
+        var num = btn.getAttribute('data-num');
+        var name = btn.getAttribute('data-name');
+        var fouls = (this.game && this.game.fouls && this.game.fouls[pid]) || 0;
+
+        var colorCls = fouls >= 4 ? 'foul-high' : 'foul-low';
+        var widget = document.createElement('div');
+        widget.className = 'foul-widget';
+        widget.innerHTML =
+            '<div class="fw-name">#' + num + ' ' + this._esc(name.toUpperCase()) + '</div>' +
+            '<div class="fw-controls">' +
+                '<button class="fw-btn fw-minus"' + (fouls <= 0 ? ' disabled' : '') + '>\u2212</button>' +
+                '<div class="fw-count">' +
+                    '<span class="fw-num ' + colorCls + '">' + fouls + '</span>' +
+                    '<span class="fw-label">FOULS</span>' +
+                '</div>' +
+                '<button class="fw-btn fw-plus"' + (fouls >= 5 ? ' disabled' : '') + '>+</button>' +
+            '</div>';
+
+        btn.appendChild(widget);
+
+        function dismiss() {
+            if (widget.parentNode === btn) {
+                btn.removeChild(widget);
+            }
+            document.removeEventListener('pointerdown', outsideHandler, true);
+        }
+
+        function outsideHandler(e) {
+            if (!btn.contains(e.target)) {
+                dismiss();
+            }
+        }
+
+        function applyFoul(delta) {
+            if (!self.game.fouls) self.game.fouls = {};
+            fouls = Math.max(0, Math.min(5, fouls + delta));
+            if (fouls === 0) {
+                delete self.game.fouls[pid];
+            } else {
+                self.game.fouls[pid] = fouls;
+            }
+            SQT.Storage.saveGame(self.game);
+            dismiss();
+            self._renderStep();
+        }
+
+        widget.querySelector('.fw-minus').addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (fouls > 0) applyFoul(-1);
+        });
+
+        widget.querySelector('.fw-plus').addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (fouls < 5) applyFoul(1);
+        });
+
+        setTimeout(function() {
+            document.addEventListener('pointerdown', outsideHandler, true);
+        }, 0);
     },
 
     // Step 2: Shot type select
