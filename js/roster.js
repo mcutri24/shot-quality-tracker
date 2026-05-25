@@ -70,12 +70,28 @@ SQT.Roster = {
         }
         if (!player) return;
 
-        var newName = prompt('Edit name for #' + player.number, player.name);
-        if (newName !== null && newName.trim()) {
-            player.name = newName.trim();
-            SQT.Storage.saveRoster(this.players);
-            this._render();
+        var newName = prompt('Edit name for #' + player.number + ':', player.name);
+        if (newName === null) return;
+        newName = newName.trim();
+        if (!newName) { SQT.App.toast('Name cannot be empty'); return; }
+
+        var newNum = prompt('Edit jersey number for ' + newName + ':', player.number);
+        if (newNum === null) return;
+        newNum = newNum.trim();
+        if (!newNum) { SQT.App.toast('Number cannot be empty'); return; }
+
+        // Duplicate number check (exclude this player)
+        for (var j = 0; j < this.players.length; j++) {
+            if (this.players[j].id !== playerId && this.players[j].number === newNum) {
+                SQT.App.toast('#' + newNum + ' is already taken');
+                return;
+            }
         }
+
+        player.name = newName;
+        player.number = newNum;
+        SQT.Storage.saveRoster(this.players);
+        this._render();
     },
 
     _movePlayer: function(idx, direction) {
