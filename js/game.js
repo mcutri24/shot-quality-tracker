@@ -55,6 +55,7 @@ SQT.Game = {
             location: location,
             possessions: [],
             timeouts: { fullUsed: 0, shortUsed: 0 },
+            fouls: {},
             finalScoreUs: null,
             finalScoreThem: null,
             result: null,
