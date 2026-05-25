@@ -1476,6 +1476,113 @@
     box-shadow: 0 0 10px rgba(56, 189, 248, 0.12);
 }
 
+/* ===== PLAYER FOUL BADGES ===== */
+.foul-badge {
+    position: absolute;
+    top: -7px;
+    left: -7px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    z-index: 1;
+    pointer-events: none;
+}
+.foul-badge.foul-1,
+.foul-badge.foul-2 {
+    background: var(--gold);
+    color: #000;
+}
+.foul-badge.foul-3 {
+    background: var(--orange);
+    color: #fff;
+}
+.foul-badge.foul-4,
+.foul-badge.foul-5 {
+    background: var(--red);
+    color: #fff;
+}
+.player-btn.fouled-out {
+    opacity: 0.45;
+}
+
+/* ===== FOUL WIDGET ===== */
+.foul-widget {
+    position: absolute;
+    inset: 0;
+    background: rgba(12, 12, 14, 0.92);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    z-index: 10;
+}
+.foul-widget .fw-name {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.foul-widget .fw-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.foul-widget .fw-count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+.foul-widget .fw-num {
+    font-size: 22px;
+    font-weight: 700;
+}
+.foul-widget .fw-num.foul-low {
+    color: var(--gold);
+}
+.foul-widget .fw-num.foul-high {
+    color: var(--red);
+}
+.foul-widget .fw-label {
+    font-size: 8px;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+}
+.foul-widget .fw-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.foul-widget .fw-btn.fw-minus {
+    background: var(--glass-bg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+.foul-widget .fw-btn.fw-plus {
+    background: var(--accent);
+    color: #fff;
+}
+.foul-widget .fw-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
 /* ===== DASHBOARD HOT/COLD BADGES ===== */
 .dash-badge {
     display: inline-block;
