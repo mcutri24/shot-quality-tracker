@@ -122,6 +122,48 @@ SQT.Game = {
         SQT.App.toast('Game saved!');
     },
 
+    reopenGame: function(gameId) {
+        // Find the game across all seasons (live list + archives)
+        var seasons = SQT.Storage.getSeasons();
+        var foundGame = null;
+        for (var i = 0; i < seasons.length && !foundGame; i++) {
+            var games = SQT.Storage.getGamesBySeason(seasons[i].id);
+            for (var j = 0; j < games.length; j++) {
+                if (games[j].id === gameId) {
+                    foundGame = games[j];
+                    break;
+                }
+            }
+        }
+        if (!foundGame) {
+            SQT.App.toast('Game not found');
+            return;
+        }
+        // Guard: block if another game is already in progress
+        var existingActive = SQT.Storage.getActiveGame();
+        if (existingActive && !existingActive.result) {
+            SQT.App.toast('End the current game before reopening another');
+            return;
+        }
+        if (!confirm('Reopen game vs ' + foundGame.opponent + '? It will become your active game again.')) return;
+
+        // Clear completed state
+        foundGame.result = null;
+        foundGame.finalScoreUs = null;
+        foundGame.finalScoreThem = null;
+
+        // Remove from wherever it was stored (live list + any archive key)
+        SQT.Storage.deleteGame(gameId);
+
+        // Save back as live game and activate
+        SQT.Storage.saveGame(foundGame);
+        SQT.Storage.setActiveGame(foundGame.id);
+        SQT.App.currentGame = foundGame;
+
+        SQT.App.showScreen('tracking');
+        if (SQT.Tracker) SQT.Tracker.start(foundGame);
+    },
+
     // seasonId param: if provided, show that season's games; otherwise active season
     renderHistory: function(seasonId) {
         var sid = seasonId;
@@ -166,6 +208,7 @@ SQT.Game = {
                     '<div class="game-score">' + score + '</div>' +
                     '<div class="game-ppp">PPP: ' + ppp + '</div>' +
                 '</div>' +
+                '<button class="history-reopen-btn" data-id="' + g.id + '" style="background:none;color:var(--text-secondary);font-size:14px;padding:4px 8px;flex-shrink:0;" title="Reopen game">&#8635;</button>' +
                 '<button class="history-delete-btn" data-id="' + g.id + '" style="background:none;color:var(--red);font-size:18px;padding:4px 8px;flex-shrink:0;">&#10005;</button>' +
             '</div>';
         }
@@ -183,6 +226,16 @@ SQT.Game = {
                     self.renderHistory(sid);
                     SQT.App.toast('Game deleted');
                 }
+            });
+        }
+
+        // Bind reopen buttons
+        var reopenBtns = list.querySelectorAll('.history-reopen-btn');
+        for (var rr = 0; rr < reopenBtns.length; rr++) {
+            reopenBtns[rr].addEventListener('click', function(ev) {
+                ev.stopPropagation();
+                var gameId = this.getAttribute('data-id');
+                self.reopenGame(gameId);
             });
         }
 
