@@ -716,8 +716,14 @@ SQT.Tracker = {
             btns[b].addEventListener('click', function() {
                 self.pending.playId = this.getAttribute('data-id');
                 self.pending.playName = this.getAttribute('data-name');
-                self.step = 5; // grade
-                self._renderStep();
+                if (self.pending.shotType === 'turnover') {
+                    // M3: Turnovers are always bronze — skip grade select
+                    self.pending.grade = 'bronze';
+                    self._logPossession();
+                } else {
+                    self.step = 5; // grade
+                    self._renderStep();
+                }
             });
         }
     },
