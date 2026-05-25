@@ -48,6 +48,18 @@ SQT.Tracker = {
         // Push history state so Android system back gesture can be intercepted
         history.pushState({ sqtTracking: true }, '');
 
+        // C1: Save live game when tab goes to background (phone sleeps, app switches)
+        var self = this;
+        if (this._visibilityHandler) {
+            document.removeEventListener('visibilitychange', this._visibilityHandler);
+        }
+        this._visibilityHandler = function() {
+            if (document.hidden && self.game) {
+                SQT.Storage.saveGame(self.game);
+            }
+        };
+        document.addEventListener('visibilitychange', this._visibilityHandler);
+
         // Restore quarter from last possession (for game resume)
         var lastQ = 'Q1';
         if (game.possessions && game.possessions.length > 0) {
