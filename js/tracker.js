@@ -1102,14 +1102,21 @@ SQT.Tracker = {
         var shortTotal = 2;
 
         // Clamp used counts (handles OT→regulation switch)
+        var origFull  = to.fullUsed;
+        var origShort = to.shortUsed;
         to.fullUsed  = Math.max(0, Math.min(fullTotal,  to.fullUsed));
         to.shortUsed = Math.max(0, Math.min(shortTotal, to.shortUsed));
+        // C2: Persist if clamp changed values (prevents stale value after page reload)
+        if (to.fullUsed !== origFull || to.shortUsed !== origShort) {
+            SQT.Storage.saveGame(this.game);
+        }
 
         var html = '<div class="to-bar-inner">';
 
         // Full timeouts group
         html += '<div class="to-group">';
-        html += '<span class="to-label to-full">FULL</span>';
+        var fullRemain = fullTotal - to.fullUsed;
+        html += '<span class="to-label to-full">FULL ' + fullRemain + '</span>';
         for (var f = 0; f < fullTotal; f++) {
             var fu = (f < to.fullUsed);
             html += '<button class="to-pip to-pip-full' + (fu ? ' to-pip-used' : '') + '"' +
@@ -1121,7 +1128,8 @@ SQT.Tracker = {
 
         // 30-second timeouts group
         html += '<div class="to-group">';
-        html += '<span class="to-label to-short">30</span>';
+        var shortRemain = shortTotal - to.shortUsed;
+        html += '<span class="to-label to-short">30 ' + shortRemain + '</span>';
         for (var s = 0; s < shortTotal; s++) {
             var su = (s < to.shortUsed);
             html += '<button class="to-pip to-pip-short' + (su ? ' to-pip-used' : '') + '"' +
