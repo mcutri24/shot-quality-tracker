@@ -11,6 +11,7 @@ SQT.Storage = {
     ACTIVE_GAME_KEY: 'sqt_active_game',
     LIVE_GAME_KEY: 'sqt_live_game',
     PLAYS_KEY: 'sqt_plays',
+    ARCHIVE_KEY_PREFIX: 'sqt_archive_',
 
     // ---- Roster (season-scoped) ----
     _rosterKey: function(seasonId) {
@@ -104,6 +105,52 @@ SQT.Storage = {
     deleteGame: function(gameId) {
         var games = this.getGames();
         this.saveGames(games.filter(function(g) { return g.id !== gameId; }));
+        // Also remove from any archive key that contains this game
+        var seasons = this.getSeasons();
+        for (var i = 0; i < seasons.length; i++) {
+            var key = this.ARCHIVE_KEY_PREFIX + seasons[i].id;
+            var data = localStorage.getItem(key);
+            if (!data) continue;
+            try {
+                var archived = JSON.parse(data);
+                var filtered = archived.filter(function(g) { return g.id !== gameId; });
+                if (filtered.length !== archived.length) {
+                    localStorage.setItem(key, JSON.stringify(filtered));
+                }
+            } catch (e) {}
+        }
+    },
+
+    archiveSeason: function(seasonId) {
+        if (!seasonId) return;
+        var games = this.getGames();
+        var toArchive = [];
+        var remaining = [];
+        for (var i = 0; i < games.length; i++) {
+            if (games[i].seasonId === seasonId) {
+                toArchive.push(games[i]);
+            } else {
+                remaining.push(games[i]);
+            }
+        }
+        if (toArchive.length === 0) return;
+        try {
+            localStorage.setItem(this.ARCHIVE_KEY_PREFIX + seasonId, JSON.stringify(toArchive));
+            this.saveGames(remaining);
+        } catch (e) {
+            console.error('archiveSeason error:', e);
+            if (window.SQT && SQT.App) SQT.App.toast('Storage error archiving season');
+        }
+    },
+
+    getArchivedGames: function(seasonId) {
+        if (!seasonId) return [];
+        try {
+            var data = localStorage.getItem(this.ARCHIVE_KEY_PREFIX + seasonId);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
     },
 
     _recoverOrphanedLiveGame: function() {
@@ -172,8 +219,17 @@ SQT.Storage = {
     },
 
     getGamesBySeason: function(seasonId) {
-        var games = this.getGames();
-        return games.filter(function(g) { return g.seasonId === seasonId; });
+        var live = this.getGames().filter(function(g) { return g.seasonId === seasonId; });
+        var archived = this.getArchivedGames(seasonId);
+        if (archived.length === 0) return live;
+        // Merge, dedup by id (live wins over archive for same ID)
+        var merged = archived.slice();
+        var ids = {};
+        for (var i = 0; i < archived.length; i++) ids[archived[i].id] = true;
+        for (var j = 0; j < live.length; j++) {
+            if (!ids[live[j].id]) merged.push(live[j]);
+        }
+        return merged;
     },
 
     getActiveGame: function() {

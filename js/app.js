@@ -332,6 +332,11 @@ SQT.App = {
         var name = prompt('Season name (e.g. 2026-2027 NA Season):');
         if (!name || !name.trim()) return;
 
+        var currentActive = SQT.Storage.getActiveSeason();
+        if (currentActive) {
+            SQT.Storage.archiveSeason(currentActive.id);
+        }
+
         var seasons = SQT.Storage.getSeasons();
         // Deactivate all
         for (var i = 0; i < seasons.length; i++) {
