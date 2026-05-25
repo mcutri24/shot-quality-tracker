@@ -223,11 +223,11 @@ SQT.Storage = {
         var archived = this.getArchivedGames(seasonId);
         if (archived.length === 0) return live;
         // Merge, dedup by id (live wins over archive for same ID)
-        var merged = archived.slice();
+        var merged = live.slice();
         var ids = {};
-        for (var i = 0; i < archived.length; i++) ids[archived[i].id] = true;
-        for (var j = 0; j < live.length; j++) {
-            if (!ids[live[j].id]) merged.push(live[j]);
+        for (var i = 0; i < live.length; i++) ids[live[i].id] = true;
+        for (var j = 0; j < archived.length; j++) {
+            if (!ids[archived[j].id]) merged.push(archived[j]);
         }
         return merged;
     },
