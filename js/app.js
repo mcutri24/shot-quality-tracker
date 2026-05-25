@@ -360,6 +360,9 @@ SQT.App = {
         SQT.Storage.saveSeasons(seasons);
         SQT.Storage.setActiveSeason(newSeason.id);
 
+        // Seed default plays (Transition, No Play) for new season — custom plays do not carry over
+        SQT.Storage.initDefaultPlays(newSeason.id);
+
         // Re-init roster and plays modules for the new season
         SQT.Roster.init();
         SQT.Plays.init();
