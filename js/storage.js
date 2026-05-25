@@ -74,14 +74,16 @@ SQT.Storage = {
     // Flush live game data into the full games list (call on game end)
     flushLiveGame: function() {
         var data = localStorage.getItem(this.LIVE_GAME_KEY);
-        if (!data) return;
+        if (!data) return true;
         try {
             var game = JSON.parse(data);
             this._mergeGameToList(game);
             localStorage.removeItem(this.LIVE_GAME_KEY);
+            return true;
         } catch (e) {
             console.error('flushLiveGame parse/save error:', e);
             if (window.SQT && SQT.App) SQT.App.toast('Error saving game data — please screenshot before closing');
+            return false;
         }
     },
 
@@ -102,6 +104,31 @@ SQT.Storage = {
     deleteGame: function(gameId) {
         var games = this.getGames();
         this.saveGames(games.filter(function(g) { return g.id !== gameId; }));
+    },
+
+    _recoverOrphanedLiveGame: function() {
+        var liveData = localStorage.getItem(this.LIVE_GAME_KEY);
+        if (!liveData) return;
+        try {
+            var liveGame = JSON.parse(liveData);
+            var activeId = localStorage.getItem(this.ACTIVE_GAME_KEY);
+            if (!activeId) {
+                // ACTIVE_GAME_KEY was wiped but live game still exists — restore it
+                localStorage.setItem(this.ACTIVE_GAME_KEY, liveGame.id);
+            } else if (activeId !== liveGame.id) {
+                // Mismatch: live key belongs to a different game ID
+                // If the live game is already in sqt_games with a result, it's a stale key
+                var games = this.getGames();
+                for (var i = 0; i < games.length; i++) {
+                    if (games[i].id === liveGame.id && games[i].result) {
+                        localStorage.removeItem(this.LIVE_GAME_KEY);
+                        break;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('_recoverOrphanedLiveGame error:', e);
+        }
     },
 
     // ---- Seasons ----
@@ -164,9 +191,10 @@ SQT.Storage = {
         if (id) {
             localStorage.setItem(this.ACTIVE_GAME_KEY, id);
         } else {
-            // Flush live game to full list before clearing
-            this.flushLiveGame();
-            localStorage.removeItem(this.ACTIVE_GAME_KEY);
+            var flushed = this.flushLiveGame();
+            if (flushed !== false) {
+                localStorage.removeItem(this.ACTIVE_GAME_KEY);
+            }
         }
     },
 
@@ -229,6 +257,8 @@ SQT.Storage = {
 
         // Migrate global roster/plays to season-scoped keys
         this._migrateRosterPlays();
+        // NEW: recover any orphaned live-game state from abnormal shutdowns
+        this._recoverOrphanedLiveGame();
     },
 
     _migrateRosterPlays: function() {
