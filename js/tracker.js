@@ -375,7 +375,11 @@ SQT.Tracker = {
                     }
                 }
             }
-            html += '<button class="player-btn' + extraCls + '" data-id="' + p.id + '" data-num="' + p.number + '" data-name="' + this._esc(p.name) + '" style="position:relative;">' +
+            var foulCount = (this.game && this.game.fouls) ? (this.game.fouls[p.id] || 0) : 0;
+            var foulBadgeHtml = foulCount > 0 ? '<span class="foul-badge foul-' + foulCount + '">' + foulCount + '</span>' : '';
+            var fouledOutCls = foulCount >= 5 ? ' fouled-out' : '';
+            html += '<button class="player-btn' + extraCls + fouledOutCls + '" data-id="' + p.id + '" data-num="' + p.number + '" data-name="' + this._esc(p.name) + '" style="position:relative;">' +
+                foulBadgeHtml +
                 badgeHtml +
                 '<span class="num">' + p.number + '</span>' +
                 '<span class="name">' + this._esc(p.name) + '</span>' +
