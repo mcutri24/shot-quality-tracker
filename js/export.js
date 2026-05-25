@@ -134,6 +134,12 @@ SQT.Export = {
         input.addEventListener('change', function() {
             var file = this.files[0];
             if (!file) { document.body.removeChild(input); return; }
+            // Issue 4: Guard against files larger than 10 MB to avoid hanging the main thread
+            if (file.size > 10 * 1024 * 1024) {
+                document.body.removeChild(input);
+                SQT.App.toast('File too large (max 10 MB)');
+                return;
+            }
             var reader = new FileReader();
             reader.onload = function(e) {
                 document.body.removeChild(input);
@@ -150,6 +156,18 @@ SQT.Export = {
             };
             reader.readAsText(file);
         });
+        // Issue 3: Remove the hidden input when the user cancels the file picker (Safari/Firefox)
+        // The window 'focus' event fires when the file dialog closes. We defer 200 ms to let
+        // the 'change' event fire first (if a file was selected) before cleaning up.
+        function onFocus() {
+            window.removeEventListener('focus', onFocus);
+            setTimeout(function() {
+                if (input.parentNode) {
+                    document.body.removeChild(input);
+                }
+            }, 200);
+        }
+        window.addEventListener('focus', onFocus);
         input.click();
     },
 
@@ -180,6 +198,14 @@ SQT.Export = {
         var existing = SQT.Storage.getGames();
         var existingIds = {};
         for (var j = 0; j < existing.length; j++) existingIds[existing[j].id] = true;
+        // Issue 1: Also collect IDs from archived games so restored backups don't re-import them
+        var seasons = SQT.Storage.getSeasons();
+        for (var s = 0; s < seasons.length; s++) {
+            var archived = SQT.Storage.getArchivedGames(seasons[s].id);
+            for (var a = 0; a < archived.length; a++) {
+                if (archived[a].id) existingIds[archived[a].id] = true;
+            }
+        }
         var imported = 0;
         for (var k = 0; k < valid.length; k++) {
             if (!existingIds[valid[k].id]) {
@@ -187,8 +213,15 @@ SQT.Export = {
                 imported++;
             }
         }
-        SQT.Storage.saveGames(existing);
+        // Issue 2: Check saveGames return value — it returns false on QuotaExceededError
+        var saved = SQT.Storage.saveGames(existing);
+        if (!saved) {
+            SQT.App.toast('Import failed: storage full');
+            return;
+        }
         SQT.App.toast('Imported ' + imported + ' game' + (imported !== 1 ? 's' : ''));
+        // Issue 5: Refresh the home screen season record widget in case the user is on home
+        SQT.App._updateSeasonRecord();
         if (SQT.App.currentScreen === 'history' && SQT.Game) SQT.Game.renderHistory();
     },
 
