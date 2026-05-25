@@ -478,6 +478,7 @@ SQT.Tracker = {
                 btn.removeChild(widget);
             }
             document.removeEventListener('pointerdown', outsideHandler, true);
+            self._suppressNextClick = false;
         }
 
         function outsideHandler(e) {
