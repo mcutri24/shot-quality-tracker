@@ -49,9 +49,11 @@ SQT.Storage = {
     saveGames: function(games) {
         try {
             localStorage.setItem(this.GAMES_KEY, JSON.stringify(games));
+            return true;
         } catch (e) {
-            console.error('saveGames storage error:', e);
-            if (window.SQT && SQT.App) SQT.App.toast('Storage full — data may not be saved');
+            console.error('saveGames error:', e);
+            if (window.SQT && SQT.App) SQT.App.toast('Storage full — clear old data');
+            return false;
         }
     },
 
@@ -77,9 +79,11 @@ SQT.Storage = {
         if (!data) return true;
         try {
             var game = JSON.parse(data);
-            this._mergeGameToList(game);
-            localStorage.removeItem(this.LIVE_GAME_KEY);
-            return true;
+            var merged = this._mergeGameToList(game);
+            if (merged !== false) {
+                localStorage.removeItem(this.LIVE_GAME_KEY);
+            }
+            return merged !== false;
         } catch (e) {
             console.error('flushLiveGame parse/save error:', e);
             if (window.SQT && SQT.App) SQT.App.toast('Error saving game data — please screenshot before closing');
@@ -89,16 +93,12 @@ SQT.Storage = {
 
     _mergeGameToList: function(game) {
         var games = this.getGames();
-        var idx = -1;
+        var found = false;
         for (var i = 0; i < games.length; i++) {
-            if (games[i].id === game.id) { idx = i; break; }
+            if (games[i].id === game.id) { games[i] = game; found = true; break; }
         }
-        if (idx >= 0) {
-            games[idx] = game;
-        } else {
-            games.push(game);
-        }
-        this.saveGames(games);
+        if (!found) games.push(game);
+        return this.saveGames(games);  // propagate success/failure
     },
 
     deleteGame: function(gameId) {
@@ -111,6 +111,7 @@ SQT.Storage = {
         if (!liveData) return;
         try {
             var liveGame = JSON.parse(liveData);
+            if (!liveGame || !liveGame.id) return; // guard against partial/corrupt JSON
             var activeId = localStorage.getItem(this.ACTIVE_GAME_KEY);
             if (!activeId) {
                 // ACTIVE_GAME_KEY was wiped but live game still exists — restore it
@@ -119,11 +120,17 @@ SQT.Storage = {
                 // Mismatch: live key belongs to a different game ID
                 // If the live game is already in sqt_games with a result, it's a stale key
                 var games = this.getGames();
+                var removed = false;
                 for (var i = 0; i < games.length; i++) {
                     if (games[i].id === liveGame.id && games[i].result) {
                         localStorage.removeItem(this.LIVE_GAME_KEY);
+                        removed = true;
                         break;
                     }
+                }
+                if (!removed) {
+                    // If we get here, live key is for an in-progress game with different ID — leave it, next save will overwrite
+                    console.warn('_recoverOrphanedLiveGame: activeId mismatch, no result found for live game', liveGame.id);
                 }
             }
         } catch (e) {
@@ -192,7 +199,7 @@ SQT.Storage = {
             localStorage.setItem(this.ACTIVE_GAME_KEY, id);
         } else {
             var flushed = this.flushLiveGame();
-            if (flushed !== false) {
+            if (flushed !== false) { // treat undefined as success (backward compat with pre-boolean callers)
                 localStorage.removeItem(this.ACTIVE_GAME_KEY);
             }
         }
