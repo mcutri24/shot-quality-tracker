@@ -105,6 +105,9 @@ SQT.App = {
         document.getElementById('btn-new-season').addEventListener('click', function() {
             self._createNewSeason();
         });
+        document.getElementById('btn-restore-backup').addEventListener('click', function() {
+            SQT.Export.importJSON();
+        });
     },
 
     _updateSeasonName: function() {

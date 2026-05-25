@@ -124,6 +124,74 @@ SQT.Export = {
         this._download(blob, name + '.csv');
     },
 
+    importJSON: function() {
+        var self = this;
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        input.addEventListener('change', function() {
+            var file = this.files[0];
+            if (!file) { document.body.removeChild(input); return; }
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.body.removeChild(input);
+                try {
+                    var data = JSON.parse(e.target.result);
+                    self._processImport(data);
+                } catch (err) {
+                    SQT.App.toast('Invalid JSON file');
+                }
+            };
+            reader.onerror = function() {
+                document.body.removeChild(input);
+                SQT.App.toast('Error reading file');
+            };
+            reader.readAsText(file);
+        });
+        input.click();
+    },
+
+    _processImport: function(data) {
+        var games = [];
+        if (Array.isArray(data)) {
+            games = data;
+        } else if (data && data.season === true && Array.isArray(data.games)) {
+            games = data.games;
+        } else if (data && data.id && Array.isArray(data.possessions)) {
+            games = [data];
+        } else {
+            SQT.App.toast('Unrecognized backup format');
+            return;
+        }
+        // Filter to valid game objects
+        var valid = [];
+        for (var i = 0; i < games.length; i++) {
+            if (games[i].id && Array.isArray(games[i].possessions)) {
+                valid.push(games[i]);
+            }
+        }
+        if (valid.length === 0) {
+            SQT.App.toast('No valid games found in file');
+            return;
+        }
+        // Merge into sqt_games (dedup by id)
+        var existing = SQT.Storage.getGames();
+        var existingIds = {};
+        for (var j = 0; j < existing.length; j++) existingIds[existing[j].id] = true;
+        var imported = 0;
+        for (var k = 0; k < valid.length; k++) {
+            if (!existingIds[valid[k].id]) {
+                existing.push(valid[k]);
+                imported++;
+            }
+        }
+        SQT.Storage.saveGames(existing);
+        SQT.App.toast('Imported ' + imported + ' game' + (imported !== 1 ? 's' : ''));
+        if (SQT.App.currentScreen === 'history' && SQT.Game) SQT.Game.renderHistory();
+    },
+
     _shotLabel: function(type) {
         var map = {
             'open_layup': 'Open Layup', 'contested_layup': 'Contested Layup',
