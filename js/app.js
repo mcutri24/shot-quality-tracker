@@ -291,7 +291,6 @@ SQT.App = {
                 }
                 SQT.Storage.saveSeasons(seasons2);
                 SQT.Storage.setActiveSeason(sid);
-                SQT.Storage.initDefaultPlays(sid);
                 SQT.Roster.init();
                 SQT.Plays.init();
                 SQT.App.toast('Season activated');
@@ -360,9 +359,6 @@ SQT.App = {
         seasons.push(newSeason);
         SQT.Storage.saveSeasons(seasons);
         SQT.Storage.setActiveSeason(newSeason.id);
-
-        // Initialize default plays for new season
-        SQT.Storage.initDefaultPlays(newSeason.id);
 
         // Re-init roster and plays modules for the new season
         SQT.Roster.init();
