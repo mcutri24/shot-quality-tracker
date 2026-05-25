@@ -100,6 +100,9 @@ SQT.App = {
             self._updateSeasonRecord();
             self._updateSeasonName();
         });
+        document.getElementById('postgame-back').addEventListener('click', function() {
+            SQT.App.showScreen('tracking');
+        });
 
         // New season button
         document.getElementById('btn-new-season').addEventListener('click', function() {
