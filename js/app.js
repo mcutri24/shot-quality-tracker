@@ -310,9 +310,10 @@ SQT.App = {
                     // Delete games for this season
                     var allGames = SQT.Storage.getGames();
                     SQT.Storage.saveGames(allGames.filter(function(g) { return g.seasonId !== sid; }));
-                    // Delete season roster and plays
+                    // Delete season roster, plays, and archive
                     localStorage.removeItem('sqt_roster_' + sid);
                     localStorage.removeItem('sqt_plays_' + sid);
+                    localStorage.removeItem(SQT.Storage.ARCHIVE_KEY_PREFIX + sid);
                     // Delete season
                     var seasons2 = SQT.Storage.getSeasons();
                     SQT.Storage.saveSeasons(seasons2.filter(function(s2) { return s2.id !== sid; }));

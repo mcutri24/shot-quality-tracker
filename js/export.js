@@ -6,7 +6,20 @@ var SQT = window.SQT || {};
 SQT.Export = {
     // Export current game or season as JSON
     exportJSON: function(game) {
-        var data = game || { season: true, games: SQT.Storage.getGames() };
+        var data;
+        if (game) {
+            data = game;
+        } else {
+            var allGames = [];
+            var seasons = SQT.Storage.getSeasons();
+            for (var si = 0; si < seasons.length; si++) {
+                var seasonGames = SQT.Storage.getGamesBySeason(seasons[si].id);
+                for (var gi = 0; gi < seasonGames.length; gi++) {
+                    allGames.push(seasonGames[gi]);
+                }
+            }
+            data = { season: true, games: allGames };
+        }
         var json = JSON.stringify(data, null, 2);
         var blob = new Blob([json], { type: 'application/json' });
         var name = game ? (game.opponent + '_' + game.date) : 'season_data';

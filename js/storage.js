@@ -134,11 +134,18 @@ SQT.Storage = {
             }
         }
         if (toArchive.length === 0) return;
+        var archiveKey = this.ARCHIVE_KEY_PREFIX + seasonId;
         try {
-            localStorage.setItem(this.ARCHIVE_KEY_PREFIX + seasonId, JSON.stringify(toArchive));
-            this.saveGames(remaining);
+            localStorage.setItem(archiveKey, JSON.stringify(toArchive));
         } catch (e) {
-            console.error('archiveSeason error:', e);
+            console.error('archiveSeason: failed to write archive key:', e);
+            if (window.SQT && SQT.App) SQT.App.toast('Storage error archiving season');
+            return;
+        }
+        var saved = this.saveGames(remaining);
+        if (!saved) {
+            // Roll back archive write — keep sqt_games as source of truth
+            try { localStorage.removeItem(archiveKey); } catch (e2) {}
             if (window.SQT && SQT.App) SQT.App.toast('Storage error archiving season');
         }
     },

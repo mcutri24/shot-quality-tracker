@@ -186,7 +186,7 @@ SQT.Game = {
         for (var k = 0; k < items.length; k++) {
             items[k].addEventListener('click', function() {
                 var gameId = this.getAttribute('data-id');
-                var allGames = SQT.Storage.getGames();
+                var allGames = SQT.Storage.getGamesBySeason(sid);  // FIX: includes archived games
                 for (var m = 0; m < allGames.length; m++) {
                     if (allGames[m].id === gameId) {
                         SQT.App.showScreen('dashboard');
