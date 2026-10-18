@@ -66,7 +66,12 @@ SQT.AssistantAPI = {
             if (response.status === 401) {
                 return { valid: false, error: 'Invalid API key' };
             }
-            return { valid: false, error: 'API error (' + response.status + ')' };
+            return response.json().then(function(body) {
+                var msg = (body && body.error && body.error.message) ? body.error.message : 'API error (' + response.status + ')';
+                return { valid: false, error: msg };
+            }).catch(function() {
+                return { valid: false, error: 'API error (' + response.status + ')' };
+            });
         }).catch(function() {
             return { valid: false, error: 'Network error — check your connection' };
         });
