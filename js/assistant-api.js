@@ -6,7 +6,7 @@ var SQT = window.SQT || {};
 
 SQT.AssistantAPI = {
     API_URL: 'https://api.anthropic.com/v1/messages',
-    MODEL: 'claude-3-5-haiku-20241022',
+    MODEL: 'claude-haiku-5-5',
     MAX_TOKENS: 4096,
     TIMEOUT_MS: 30000,
     API_KEY_STORAGE: 'sqt_api_key',
