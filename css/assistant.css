@@ -5,37 +5,21 @@
     position: fixed;
     bottom: 140px;
     right: 16px;
-    width: 56px;
-    height: 56px;
-    background: linear-gradient(145deg, #1a1a1e 0%, #2a2a30 100%);
-    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(145deg, #c41230 0%, #a01028 100%);
+    border-radius: 20px 20px 20px 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 12px rgba(196, 18, 48, 0.25);
+    box-shadow: 0 3px 10px rgba(196, 18, 48, 0.5), 0 0 16px rgba(196, 18, 48, 0.2);
     z-index: 40;
     transition: transform 0.15s ease, opacity 0.15s ease;
     touch-action: manipulation;
 }
-.assistant-fab-inner {
-    position: relative;
-    width: 28px;
-    height: 28px;
-}
-.assistant-fab-inner svg.assistant-fab-basketball {
-    width: 28px;
-    height: 28px;
-}
-.assistant-fab-sparkle {
-    position: absolute;
-    animation: assistantSparkle 2s ease-in-out infinite;
-}
-.assistant-fab-sparkle-1 { top: -6px; right: -8px; animation-delay: 0s; }
-.assistant-fab-sparkle-2 { top: -4px; left: -9px; animation-delay: 0.7s; }
-.assistant-fab-sparkle-3 { bottom: -6px; right: -7px; animation-delay: 1.3s; }
-@keyframes assistantSparkle {
-    0%, 100% { opacity: 0.3; transform: scale(0.7); }
-    50% { opacity: 1; transform: scale(1); }
+.assistant-fab-icon {
+    width: 26px;
+    height: 26px;
 }
 
 .assistant-fab:active {
@@ -264,11 +248,12 @@
     border-radius: 20px;
     padding: 8px 14px;
     color: var(--text-primary);
-    font-size: 13px;
+    font-size: 16px;
 }
 
 .assistant-input-bar input::placeholder {
     color: var(--text-muted);
+    font-size: 14px;
 }
 
 .assistant-send-btn {
@@ -426,7 +411,7 @@
     border-radius: 8px;
     padding: 10px 14px;
     color: var(--text-primary);
-    font-size: 13px;
+    font-size: 16px;
     font-family: monospace;
 }
 

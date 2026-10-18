@@ -22,26 +22,15 @@ SQT.Assistant = {
         fab.className = 'assistant-fab';
         fab.id = 'assistant-fab';
         fab.setAttribute('aria-label', 'Open AI Assistant');
-        fab.innerHTML = '<div class="assistant-fab-inner">' +
-            '<svg class="assistant-fab-basketball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' +
-                '<defs>' +
-                    '<radialGradient id="ballGrad" cx="38%" cy="35%" r="60%">' +
-                        '<stop offset="0%" stop-color="#f4952a"/>' +
-                        '<stop offset="50%" stop-color="#e8751a"/>' +
-                        '<stop offset="100%" stop-color="#c45a10"/>' +
-                    '</radialGradient>' +
-                '</defs>' +
-                '<circle cx="50" cy="50" r="44" fill="url(#ballGrad)" stroke="#8b3a08" stroke-width="2"/>' +
-                '<path d="M50 6 C38 28, 38 72, 50 94" stroke="#4a2006" stroke-width="2.5" fill="none"/>' +
-                '<path d="M50 6 C62 28, 62 72, 50 94" stroke="#4a2006" stroke-width="2.5" fill="none"/>' +
-                '<line x1="6" y1="50" x2="94" y2="50" stroke="#4a2006" stroke-width="2.5"/>' +
-                '<path d="M14 22 C32 34, 68 34, 86 22" stroke="#4a2006" stroke-width="2.5" fill="none"/>' +
-                '<path d="M14 78 C32 66, 68 66, 86 78" stroke="#4a2006" stroke-width="2.5" fill="none"/>' +
-            '</svg>' +
-            '<svg class="assistant-fab-sparkle assistant-fab-sparkle-1" width="10" height="10" viewBox="0 0 24 24"><path d="M12 0 L14 9 L24 12 L14 15 L12 24 L10 15 L0 12 L10 9 Z" fill="#ffd700"/></svg>' +
-            '<svg class="assistant-fab-sparkle assistant-fab-sparkle-2" width="7" height="7" viewBox="0 0 24 24"><path d="M12 0 L14 9 L24 12 L14 15 L12 24 L10 15 L0 12 L10 9 Z" fill="#ffd700"/></svg>' +
-            '<svg class="assistant-fab-sparkle assistant-fab-sparkle-3" width="8" height="8" viewBox="0 0 24 24"><path d="M12 0 L14 9 L24 12 L14 15 L12 24 L10 15 L0 12 L10 9 Z" fill="#ffd700"/></svg>' +
-        '</div>';
+        fab.innerHTML =
+            '<svg class="assistant-fab-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                '<circle cx="50" cy="50" r="38" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>' +
+                '<path d="M50 12 C40 30, 40 70, 50 88" stroke="white" stroke-width="2" fill="none" opacity="0.9"/>' +
+                '<path d="M50 12 C60 30, 60 70, 50 88" stroke="white" stroke-width="2" fill="none" opacity="0.9"/>' +
+                '<line x1="12" y1="50" x2="88" y2="50" stroke="white" stroke-width="2" opacity="0.9"/>' +
+                '<path d="M18 26 C34 36, 66 36, 82 26" stroke="white" stroke-width="2" fill="none" opacity="0.7"/>' +
+                '<path d="M18 74 C34 64, 66 64, 82 74" stroke="white" stroke-width="2" fill="none" opacity="0.7"/>' +
+            '</svg>';
         document.body.appendChild(fab);
 
         // Backdrop
