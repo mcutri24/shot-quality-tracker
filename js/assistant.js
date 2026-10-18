@@ -72,6 +72,7 @@ SQT.Assistant = {
                 '<div class="assistant-typing-dot"></div>' +
                 '<div class="assistant-typing-dot"></div>' +
                 '<div class="assistant-typing-dot"></div>' +
+                '<span class="assistant-typing-label">Thinking</span>' +
             '</div>' +
             '<div class="assistant-input-bar" id="assistant-input-bar">' +
                 '<input type="text" id="assistant-input" placeholder="Ask about the game..." autocomplete="off">' +
@@ -230,7 +231,7 @@ SQT.Assistant = {
     // ---- View Management ----
     _showNoKeyView: function() {
         document.getElementById('assistant-messages').style.display = 'none';
-        document.getElementById('assistant-typing').style.display = 'none';
+        document.getElementById('assistant-typing').classList.remove('visible');
         document.getElementById('assistant-input-bar').style.display = 'none';
         document.getElementById('assistant-settings').style.display = 'none';
         document.getElementById('assistant-no-key').style.display = 'flex';
@@ -239,7 +240,7 @@ SQT.Assistant = {
 
     _showChatView: function() {
         document.getElementById('assistant-messages').style.display = 'flex';
-        document.getElementById('assistant-typing').style.display = 'none';
+        document.getElementById('assistant-typing').classList.remove('visible');
         document.getElementById('assistant-input-bar').style.display = 'flex';
         document.getElementById('assistant-settings').style.display = 'none';
         document.getElementById('assistant-no-key').style.display = 'none';
@@ -253,7 +254,7 @@ SQT.Assistant = {
 
     _showSettings: function() {
         document.getElementById('assistant-messages').style.display = 'none';
-        document.getElementById('assistant-typing').style.display = 'none';
+        document.getElementById('assistant-typing').classList.remove('visible');
         document.getElementById('assistant-input-bar').style.display = 'none';
         document.getElementById('assistant-no-key').style.display = 'none';
         document.getElementById('assistant-settings').style.display = 'block';
@@ -337,6 +338,7 @@ SQT.Assistant = {
         if (this._currentRequest) return; // Already streaming
 
         input.value = '';
+        document.getElementById('assistant-send-btn').disabled = true;
 
         // Add user message to UI
         this._addMessage('user', text);
@@ -363,6 +365,7 @@ SQT.Assistant = {
 
         // Create streaming message element
         var aiMsgEl = this._createMessageEl('assistant', '');
+        aiMsgEl.classList.add('streaming');
         document.getElementById('assistant-messages').appendChild(aiMsgEl);
         this._streamingEl = aiMsgEl;
         var streamedText = '';
@@ -380,7 +383,9 @@ SQT.Assistant = {
             onDone: function(fullText) {
                 self._currentRequest = null;
                 self._streamingEl = null;
+                aiMsgEl.classList.remove('streaming');
                 document.getElementById('assistant-typing').classList.remove('visible');
+                document.getElementById('assistant-send-btn').disabled = false;
 
                 // Store in message history
                 self._messages.push({ role: 'assistant', content: fullText });
@@ -392,7 +397,9 @@ SQT.Assistant = {
             onError: function(err) {
                 self._currentRequest = null;
                 self._streamingEl = null;
+                aiMsgEl.classList.remove('streaming');
                 document.getElementById('assistant-typing').classList.remove('visible');
+                document.getElementById('assistant-send-btn').disabled = false;
 
                 // Remove the empty streaming element
                 if (aiMsgEl.parentNode) {
