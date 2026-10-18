@@ -1,4 +1,4 @@
-var CACHE_NAME = 'sqt-v42';
+var CACHE_NAME = 'sqt-v43';
 var ASSETS = [
     './',
     './index.html',
@@ -9,6 +9,7 @@ var ASSETS = [
     './css/variables.css',
     './css/screens.css',
     './css/components.css',
+    './css/assistant.css',
     './js/storage.js',
     './js/roster.js',
     './js/plays.js',
@@ -16,7 +17,11 @@ var ASSETS = [
     './js/tracker.js',
     './js/dashboard.js',
     './js/export.js',
-    './js/app.js'
+    './js/app.js',
+    './js/assistant-context.js',
+    './js/assistant-api.js',
+    './js/assistant.js',
+    './lib/chart.min.js'
 ];
 
 self.addEventListener('install', function(e) {
