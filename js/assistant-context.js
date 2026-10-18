@@ -92,9 +92,11 @@ SQT.AssistantContext = {
             });
         }
 
-        // Include full possession data for all games (season-level analysis needs it)
+        // Include possession data (cap at most recent 15 games to avoid token limits)
+        var maxGamesForPossessions = 15;
+        var startIdx = games.length > maxGamesForPossessions ? games.length - maxGamesForPossessions : 0;
         var allPossessions = [];
-        for (var j = 0; j < games.length; j++) {
+        for (var j = startIdx; j < games.length; j++) {
             var gp = games[j];
             if (gp.possessions) {
                 for (var k = 0; k < gp.possessions.length; k++) {

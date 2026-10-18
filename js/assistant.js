@@ -169,7 +169,7 @@ SQT.Assistant = {
                 document.getElementById('assistant-key-status').textContent = '';
                 document.getElementById('assistant-status-value').textContent = '--';
                 self._showSettings();
-                SQT.App.toast('API key removed');
+                if (SQT.App && SQT.App.toast) SQT.App.toast('API key removed');
             }
         });
     },
@@ -550,6 +550,7 @@ SQT.Assistant = {
         };
 
         var chart = new Chart(ctx, chartConfig);
+        wrapEl._chartInstance = chart;
 
         // Bind expand button
         var expandBtn = wrapEl.querySelector('.assistant-chart-expand');
@@ -568,18 +569,24 @@ SQT.Assistant = {
 
         var overlay = document.createElement('div');
         overlay.className = 'assistant-chart-overlay';
+        var safeTitle = (spec.title || 'Chart').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         overlay.innerHTML =
             '<button class="assistant-chart-overlay-close">\u2715</button>' +
-            '<div class="assistant-chart-overlay-title">' + (spec.title || 'Chart') + '</div>' +
+            '<div class="assistant-chart-overlay-title">' + safeTitle + '</div>' +
             '<canvas></canvas>';
         document.body.appendChild(overlay);
 
         // Close handlers
-        overlay.querySelector('.assistant-chart-overlay-close').addEventListener('click', function() {
-            overlay.parentNode.removeChild(overlay);
-        });
+        var closeOverlay = function() {
+            if (overlay._chartInstance) {
+                overlay._chartInstance.destroy();
+                overlay._chartInstance = null;
+            }
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        };
+        overlay.querySelector('.assistant-chart-overlay-close').addEventListener('click', closeOverlay);
         overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) overlay.parentNode.removeChild(overlay);
+            if (e.target === overlay) closeOverlay();
         });
 
         // Render chart at full size
@@ -604,7 +611,7 @@ SQT.Assistant = {
             });
         }
 
-        new Chart(ctx, {
+        overlay._chartInstance = new Chart(ctx, {
             type: chartType,
             data: {
                 labels: spec.labels || [],
@@ -686,7 +693,12 @@ SQT.Assistant = {
                         }
                         if (lastUserMsg) {
                             // Remove the last user message from history (it will be re-added)
-                            self._messages.pop();
+                            for (var j = self._messages.length - 1; j >= 0; j--) {
+                                if (self._messages[j].role === 'user') {
+                                    self._messages.splice(j, 1);
+                                    break;
+                                }
+                            }
                             // Remove the error message element
                             if (div.parentNode) div.parentNode.removeChild(div);
                             document.getElementById('assistant-input').value = lastUserMsg;

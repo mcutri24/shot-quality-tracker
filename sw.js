@@ -1,4 +1,4 @@
-var CACHE_NAME = 'sqt-v43';
+var CACHE_NAME = 'sqt-v44';
 var ASSETS = [
     './',
     './index.html',
@@ -46,6 +46,9 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
+    // Only cache GET requests from same origin (skip API calls, POST requests, etc.)
+    if (e.request.method !== 'GET') return;
+
     // Stale-while-revalidate: return cache immediately, update cache from network in background
     e.respondWith(
         caches.open(CACHE_NAME).then(function(cache) {
