@@ -171,6 +171,25 @@
     font-weight: 600;
 }
 
+/* --- Copy Button --- */
+.assistant-copy-btn {
+    display: block;
+    margin-top: 8px;
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.assistant-copy-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
 /* --- Typing Indicator --- */
 .assistant-typing {
     align-self: flex-start;

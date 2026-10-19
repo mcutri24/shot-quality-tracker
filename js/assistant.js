@@ -454,7 +454,38 @@ SQT.Assistant = {
                     '</div>';
             }
         }
+
+        // Add copy button
+        var plainText = fullText.replace(/```chart[\s\S]*?```/g, '').trim();
+        html += '<button class="assistant-copy-btn" data-text="' +
+            plainText.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+            '">Copy</button>';
+
         el.innerHTML = html;
+
+        // Bind copy button
+        var copyBtn = el.querySelector('.assistant-copy-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+                var textToCopy = this.getAttribute('data-text');
+                navigator.clipboard.writeText(textToCopy).then(function() {
+                    copyBtn.textContent = 'Copied!';
+                    setTimeout(function() { copyBtn.textContent = 'Copy'; }, 1500);
+                }).catch(function() {
+                    // Fallback for older browsers
+                    var ta = document.createElement('textarea');
+                    ta.value = textToCopy;
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    copyBtn.textContent = 'Copied!';
+                    setTimeout(function() { copyBtn.textContent = 'Copy'; }, 1500);
+                });
+            });
+        }
 
         // Render charts
         var chartWraps = el.querySelectorAll('.assistant-chart-wrap');
