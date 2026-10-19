@@ -376,6 +376,16 @@ SQT.Assistant = {
                 document.getElementById('assistant-typing').classList.remove('visible');
                 document.getElementById('assistant-send-btn').disabled = false;
 
+                if (!fullText || fullText.trim().length === 0) {
+                    // Empty response — remove the blank bubble and show error
+                    if (aiMsgEl.parentNode) {
+                        aiMsgEl.parentNode.removeChild(aiMsgEl);
+                    }
+                    self._addErrorMessage({ type: 'empty', message: 'No response received. Try rephrasing or asking a simpler question.' });
+                    self._scrollToBottom();
+                    return;
+                }
+
                 // Store in message history
                 self._messages.push({ role: 'assistant', content: fullText });
 

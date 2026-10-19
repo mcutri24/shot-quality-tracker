@@ -134,15 +134,33 @@ SQT.AssistantAPI = {
                     var errorType = 'server-error';
                     var errorMsg = 'Something went wrong';
 
+                    // Try to extract detailed error from response body
+                    try {
+                        var parsed = JSON.parse(body);
+                        if (parsed && parsed.error && parsed.error.message) {
+                            errorMsg = parsed.error.message;
+                        }
+                    } catch (e) {
+                        // Not JSON, use status-based message
+                    }
+
                     if (response.status === 401) {
                         errorType = 'invalid-key';
-                        errorMsg = 'API key is invalid or expired';
+                        if (errorMsg === 'Something went wrong') {
+                            errorMsg = 'API key is invalid or expired';
+                        }
                     } else if (response.status === 429) {
                         errorType = 'rate-limited';
-                        errorMsg = 'Too many requests — try again in a moment';
+                        if (errorMsg === 'Something went wrong') {
+                            errorMsg = 'Too many requests — try again in a moment';
+                        }
                     } else if (response.status === 529 || response.status === 503) {
                         errorType = 'overloaded';
-                        errorMsg = 'API is temporarily overloaded';
+                        if (errorMsg === 'Something went wrong') {
+                            errorMsg = 'API is temporarily overloaded';
+                        }
+                    } else if (errorMsg === 'Something went wrong') {
+                        errorMsg = 'API error (' + response.status + ')';
                     }
 
                     opts.onError({ type: errorType, message: errorMsg });
@@ -179,6 +197,10 @@ SQT.AssistantAPI = {
                                 var text = event.delta.text;
                                 fullText += text;
                                 opts.onToken(text);
+                            } else if (event.type === 'error') {
+                                var errMsg = (event.error && event.error.message) ? event.error.message : 'Stream error';
+                                opts.onError({ type: 'stream-error', message: errMsg });
+                                return;
                             }
                         } catch (e) {
                             // Skip unparseable lines
