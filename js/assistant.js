@@ -88,7 +88,7 @@ SQT.Assistant = {
                 '<div class="assistant-settings-info">' +
                     '<div class="assistant-settings-info-card">' +
                         '<div class="assistant-settings-info-label">Model</div>' +
-                        '<div class="assistant-settings-info-value">Haiku</div>' +
+                        '<div class="assistant-settings-info-value">Sonnet</div>' +
                     '</div>' +
                     '<div class="assistant-settings-info-card">' +
                         '<div class="assistant-settings-info-label">Status</div>' +
