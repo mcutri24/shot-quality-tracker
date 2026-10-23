@@ -532,11 +532,13 @@ SQT.Assistant = {
             }
         }
 
-        // Add copy button
+        // Add action buttons (Copy + Share)
         var plainText = fullText.replace(/```chart[\s\S]*?```/g, '').trim();
-        html += '<button class="assistant-copy-btn" data-text="' +
-            plainText.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
-            '">Copy</button>';
+        var escapedText = plainText.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        html += '<div class="assistant-action-btns">' +
+            '<button class="assistant-copy-btn" data-text="' + escapedText + '">Copy</button>' +
+            '<button class="assistant-share-btn" data-text="' + escapedText + '">Share</button>' +
+            '</div>';
 
         el.innerHTML = html;
 
@@ -561,6 +563,16 @@ SQT.Assistant = {
                     copyBtn.textContent = 'Copied!';
                     setTimeout(function() { copyBtn.textContent = 'Copy'; }, 1500);
                 });
+            });
+        }
+
+        // Bind share button
+        var shareBtn = el.querySelector('.assistant-share-btn');
+        if (shareBtn) {
+            var self = this;
+            shareBtn.addEventListener('click', function() {
+                var textToShare = this.getAttribute('data-text');
+                self._shareAsImage(textToShare, shareBtn);
             });
         }
 
@@ -844,6 +856,226 @@ SQT.Assistant = {
         }
 
         document.getElementById('assistant-messages').appendChild(div);
+    },
+
+    _extractShareStats: function(text) {
+        var stats = {};
+
+        // Try to extract score (patterns like "54-48", "Win 54-48", "Lost 42-50")
+        var scoreMatch = text.match(/(\d{1,3})\s*[-\u2013]\s*(\d{1,3})/);
+        if (scoreMatch) {
+            stats.scoreUs = scoreMatch[1];
+            stats.scoreThem = scoreMatch[2];
+        }
+
+        // Win or loss
+        var winMatch = text.match(/\b(win|won|victory|W)\b/i);
+        var lossMatch = text.match(/\b(loss|lost|defeat|fell|L)\b/i);
+        if (winMatch) stats.result = 'WIN';
+        else if (lossMatch) stats.result = 'LOSS';
+
+        // FG%
+        var fgMatch = text.match(/FG[%:]?\s*(\d{1,3}(?:\.\d)?)\s*%?/i);
+        if (!fgMatch) fgMatch = text.match(/(\d{1,3}(?:\.\d)?)\s*%?\s*FG/i);
+        if (fgMatch) stats.fgPct = fgMatch[1] + '%';
+
+        // 3PT%
+        var threePtMatch = text.match(/3(?:PT|pt|P|p)[%:]?\s*(\d{1,3}(?:\.\d)?)\s*%?/i);
+        if (!threePtMatch) threePtMatch = text.match(/(\d{1,3}(?:\.\d)?)\s*%?\s*(?:from|from the)\s*(?:3|three)/i);
+        if (threePtMatch) stats.threePct = threePtMatch[1] + '%';
+
+        // Turnovers
+        var toMatch = text.match(/(\d{1,2})\s*turnovers?/i);
+        if (!toMatch) toMatch = text.match(/turnovers?[:\s]*(\d{1,2})/i);
+        if (toMatch) stats.turnovers = toMatch[1];
+
+        // Player of the Game — look for bolded player or "Player of the Game" mention
+        var potgMatch = text.match(/Player of the Game[:\s]*\*?\*?([#\d]+ [A-Z][a-z]+ [A-Z][a-z]+)/i);
+        if (!potgMatch) potgMatch = text.match(/Player of the Game[:\s]*\*?\*?#?(\d+\s+\w+\s+\w+)/i);
+        if (!potgMatch) {
+            // Fallback: first bolded player with stats
+            var boldPlayer = text.match(/\*\*#?(\d+\s+[A-Za-z]+ [A-Za-z]+)\*\*\s*[\u2014\-:]\s*([^\n]+)/);
+            if (boldPlayer) {
+                stats.potgName = '#' + boldPlayer[1];
+                stats.potgStats = boldPlayer[2].substring(0, 40);
+            }
+        } else {
+            stats.potgName = potgMatch[1].trim();
+            // Try to find the stat line after the POTG name
+            var escapedName = stats.potgName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            var potgLine = text.match(new RegExp(escapedName + '[\\s\u2014\\-:]*([^\\n]+)', 'i'));
+            if (potgLine) stats.potgStats = potgLine[1].substring(0, 50);
+        }
+
+        return stats;
+    },
+
+    _buildShareCard: function(text) {
+        var stats = this._extractShareStats(text);
+        var badge = document.getElementById('assistant-context-badge');
+        var contextLabel = badge ? badge.textContent : '';
+
+        // Determine if this is a game-specific or general report
+        var hasGameStats = stats.scoreUs && stats.scoreThem;
+
+        var card = document.createElement('div');
+        card.style.cssText = 'position:fixed;left:-9999px;top:0;width:380px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
+
+        var html = '';
+
+        // ---- CRIMSON HEADER ----
+        html += '<div style="background:linear-gradient(135deg,#c41230,#8a0e24);padding:16px 18px;">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+        html += '<div style="display:flex;align-items:center;gap:10px;">';
+        html += '<div style="width:32px;height:32px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">\uD83C\uDFC0</div>';
+        html += '<div><div style="color:#fff;font-size:14px;font-weight:700;">Newark Academy</div>';
+        html += '<div style="color:rgba(255,255,255,0.7);font-size:11px;">Minutemen Basketball</div></div>';
+        html += '</div>';
+        if (contextLabel) {
+            html += '<div style="color:rgba(255,255,255,0.6);font-size:11px;text-align:right;">' +
+                contextLabel.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
+        }
+        html += '</div>';
+
+        // Score bar (only for game-specific reports)
+        if (hasGameStats) {
+            var resultColor = stats.result === 'WIN' ? '#4CAF50' : (stats.result === 'LOSS' ? '#f44336' : '#fff');
+            html += '<div style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.15);">';
+            html += '<div style="font-size:32px;font-weight:800;color:#fff;">' + stats.scoreUs +
+                '<span style="color:rgba(255,255,255,0.4);margin:0 8px;">-</span>' + stats.scoreThem + '</div>';
+            if (stats.result) {
+                html += '<div style="font-size:11px;font-weight:600;color:' + resultColor + ';margin-top:2px;">' + stats.result + '</div>';
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+
+        // ---- WHITE BODY ----
+        html += '<div style="background:#ffffff;padding:16px 18px;">';
+
+        // Stat boxes (only if we have stats)
+        if (stats.fgPct || stats.threePct || stats.turnovers) {
+            html += '<div style="display:flex;gap:8px;margin-bottom:14px;">';
+            if (stats.fgPct) {
+                html += '<div style="flex:1;background:#f5f5f7;border-radius:8px;padding:10px;text-align:center;">';
+                html += '<div style="font-size:9px;color:#8a8a98;text-transform:uppercase;letter-spacing:0.5px;">FG%</div>';
+                html += '<div style="font-size:20px;font-weight:700;color:#2a8a2a;">' + stats.fgPct + '</div>';
+                html += '</div>';
+            }
+            if (stats.threePct) {
+                html += '<div style="flex:1;background:#f5f5f7;border-radius:8px;padding:10px;text-align:center;">';
+                html += '<div style="font-size:9px;color:#8a8a98;text-transform:uppercase;letter-spacing:0.5px;">3PT%</div>';
+                html += '<div style="font-size:20px;font-weight:700;color:#b8860b;">' + stats.threePct + '</div>';
+                html += '</div>';
+            }
+            if (stats.turnovers) {
+                html += '<div style="flex:1;background:#f5f5f7;border-radius:8px;padding:10px;text-align:center;">';
+                html += '<div style="font-size:9px;color:#8a8a98;text-transform:uppercase;letter-spacing:0.5px;">TO\'s</div>';
+                html += '<div style="font-size:20px;font-weight:700;color:#c41230;">' + stats.turnovers + '</div>';
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+
+        // Player of the Game callout
+        if (stats.potgName) {
+            html += '<div style="background:#fdf2f4;border:1px solid #e8c0c8;border-radius:8px;padding:10px 14px;margin-bottom:14px;">';
+            html += '<div style="font-size:9px;color:#c41230;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:3px;">\u2B50 Player of the Game</div>';
+            html += '<div style="font-size:14px;font-weight:700;color:#1a1a2e;">' +
+                stats.potgName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
+            if (stats.potgStats) {
+                html += '<div style="font-size:11px;color:#6a6a78;">' +
+                    stats.potgStats.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
+            }
+            html += '</div>';
+        }
+
+        // Written content — strip chart blocks, convert markdown-bold and clean up
+        var bodyText = text.replace(/```chart[\s\S]*?```/g, '').trim();
+        // Escape HTML first
+        bodyText = bodyText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // Convert **bold** to styled <b> tags
+        bodyText = bodyText.replace(/\*\*([^*]+)\*\*/g, '<b style="color:#1a1a2e;">$1</b>');
+        // Convert newlines
+        bodyText = bodyText.replace(/\n/g, '<br>');
+
+        html += '<div style="font-size:12px;line-height:1.7;color:#2a2a3a;">' + bodyText + '</div>';
+        html += '</div>';
+
+        // ---- FOOTER ----
+        html += '<div style="background:#f5f5f7;padding:9px 18px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e8e8ec;">';
+        html += '<div style="font-size:9px;color:#8a8a98;">Shot Quality Tracker</div>';
+        html += '<div style="font-size:9px;color:#8a8a98;">AI-Generated Analysis</div>';
+        html += '</div>';
+
+        card.innerHTML = html;
+        return card;
+    },
+
+    _shareAsImage: function(text, btn) {
+        if (typeof html2canvas === 'undefined') {
+            if (SQT.App && SQT.App.toast) SQT.App.toast('Share not available \u2014 try again');
+            return;
+        }
+
+        btn.textContent = 'Creating...';
+        btn.disabled = true;
+
+        // Build the image card as a hidden DOM element
+        var card = this._buildShareCard(text);
+        document.body.appendChild(card);
+
+        var self = this;
+        html2canvas(card, {
+            backgroundColor: null,
+            scale: 2,
+            useCORS: true,
+            logging: false
+        }).then(function(canvas) {
+            document.body.removeChild(card);
+            canvas.toBlob(function(blob) {
+                self._copyImageToClipboard(blob, btn);
+            }, 'image/png');
+        }).catch(function() {
+            document.body.removeChild(card);
+            btn.textContent = 'Share';
+            btn.disabled = false;
+            if (SQT.App && SQT.App.toast) SQT.App.toast('Could not create image');
+        });
+    },
+
+    _copyImageToClipboard: function(blob, btn) {
+        if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+            navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]).then(function() {
+                btn.textContent = 'Image Copied!';
+                btn.disabled = false;
+                setTimeout(function() { btn.textContent = 'Share'; }, 1500);
+            }).catch(function() {
+                // Fallback: download the image
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'shot-quality-report.png';
+                a.click();
+                URL.revokeObjectURL(url);
+                btn.textContent = 'Saved!';
+                btn.disabled = false;
+                setTimeout(function() { btn.textContent = 'Share'; }, 1500);
+            });
+        } else {
+            // No ClipboardItem support — download instead
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'shot-quality-report.png';
+            a.click();
+            URL.revokeObjectURL(url);
+            btn.textContent = 'Saved!';
+            btn.disabled = false;
+            setTimeout(function() { btn.textContent = 'Share'; }, 1500);
+        }
     },
 
     _scrollToBottom: function() {
