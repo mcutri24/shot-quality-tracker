@@ -10,6 +10,28 @@ SQT.Assistant = {
     _currentRequest: null, // { abort: Function } for in-flight API call
     _streamingEl: null,    // The message element currently being streamed into
 
+    // ---- Quick Action Chip Definitions ----
+    _chips: {
+        halftime: [
+            { icon: '\u26A1', label: 'Halftime Report', featured: true, prompt: 'Give me a halftime report with key takeaways \u2014 what\u2019s working, what\u2019s not, and what adjustments should we make in the second half. Lead with the most important thing the team needs to hear.' },
+            { icon: '\uD83D\uDD25', label: 'Who\u2019s Hot?', prompt: 'Who\u2019s playing well right now? Show me the top performers by points, efficiency, and shot quality grades.' },
+            { icon: '\uD83C\uDFAF', label: 'Shot Selection', prompt: 'Break down our shot selection so far \u2014 are we taking good shots? Show grade distribution (gold/silver/bronze) and shot type mix. Also break down which plays are producing the best and worst looks.' },
+            { icon: '\u26A0\uFE0F', label: 'Turnover Check', prompt: 'How many turnovers do we have? Who\u2019s turning it over and when? Are there patterns \u2014 certain quarters, plays, or situations where we\u2019re giving it away?' }
+        ],
+        postgame: [
+            { icon: '\uD83D\uDCCB', label: 'Game Recap', featured: true, prompt: 'Give me a complete game recap with key takeaways \u2014 top performers, what worked, what didn\u2019t, and what we should focus on in practice this week.' },
+            { icon: '\u2B50', label: 'Player Breakdown', prompt: 'Give me a full player-by-player breakdown for this game \u2014 points, FG%, shot quality, turnovers, and key moments for each player who saw the floor. Highlight the positives AND the areas to improve for each. At the top, name the Player of the Game and why.' },
+            { icon: '\uD83C\uDFAF', label: 'Shot Selection', prompt: 'Break down our shot selection for this game \u2014 grade distribution, shot type mix, open vs contested looks. Also break down which plays produced the best and worst shot quality. Were we running the right stuff?' },
+            { icon: '\u26A0\uFE0F', label: 'Turnover Check', prompt: 'How many turnovers did we have? Who turned it over and when? Break down any patterns \u2014 certain quarters, plays, or situations. How many points did turnovers likely cost us?' }
+        ],
+        season: [
+            { icon: '\uD83D\uDCCA', label: 'Season Summary', featured: true, prompt: 'Give me an overall season summary \u2014 record, scoring trends, team strengths and weaknesses, and how we\u2019ve progressed over the course of the season.' },
+            { icon: '\uD83D\uDC65', label: 'Player Breakdown', prompt: 'Give me a full player breakdown for the season \u2014 rank players by impact, showing points, efficiency, and shot quality. Highlight who our best and worst performers are. Also call out which players have been hot recently or shown the most improvement over the season.' },
+            { icon: '\uD83C\uDFAF', label: 'Shot Selection & Trends', prompt: 'Break down our shooting for the season \u2014 FG%, 3PT%, FT%, and shot quality grades overall and how they\u2019ve trended recently. Are we taking better or worse shots as the season goes on? Show the overall numbers and the recent trend (last 3-5 games).' },
+            { icon: '\uD83C\uDFC0', label: 'Play Breakdown', prompt: 'Rank all our plays by effectiveness this season \u2014 PPP, frequency, shot quality grades, and conversion rate. Separate set plays from transition and offensive rebounds since those aren\u2019t designed plays. For set plays, call out which ones have been working more recently vs earlier in the season. Which plays should we run more and which should we consider cutting?' }
+        ]
+    },
+
     // ---- Initialization ----
     init: function() {
         this._createDOM();
@@ -55,6 +77,8 @@ SQT.Assistant = {
                     '<button class="assistant-header-btn assistant-close-btn" id="assistant-close-btn" aria-label="Close">\u2715</button>' +
                 '</div>' +
             '</div>' +
+            // Quick action chips
+            '<div class="assistant-chips" id="assistant-chips"></div>' +
             // Chat view
             '<div class="assistant-messages" id="assistant-messages"></div>' +
             '<div class="assistant-typing" id="assistant-typing">' +
@@ -225,6 +249,7 @@ SQT.Assistant = {
         document.getElementById('assistant-settings').style.display = 'none';
         document.getElementById('assistant-no-key').style.display = 'flex';
         document.getElementById('assistant-settings-btn').style.display = 'none';
+        document.getElementById('assistant-chips').style.display = 'none';
     },
 
     _showChatView: function() {
@@ -234,7 +259,11 @@ SQT.Assistant = {
         document.getElementById('assistant-settings').style.display = 'none';
         document.getElementById('assistant-no-key').style.display = 'none';
         document.getElementById('assistant-settings-btn').style.display = 'flex';
+        document.getElementById('assistant-chips').style.display = 'flex';
         this._isSettingsView = false;
+
+        // Render context-aware chips
+        this._renderChips();
 
         // Focus input
         var input = document.getElementById('assistant-input');
@@ -248,6 +277,7 @@ SQT.Assistant = {
         document.getElementById('assistant-no-key').style.display = 'none';
         document.getElementById('assistant-settings').style.display = 'block';
         document.getElementById('assistant-settings-btn').style.display = 'flex';
+        document.getElementById('assistant-chips').style.display = 'none';
         this._isSettingsView = true;
 
         // Populate current key
@@ -317,6 +347,53 @@ SQT.Assistant = {
         var poss = game.possessions || [];
         if (poss.length === 0) return 'Q1';
         return poss[poss.length - 1].quarter || 'Q1';
+    },
+
+    _getChipContext: function() {
+        var activeGame = SQT.Storage.getActiveGame();
+        // Live game — show halftime chips for all live game states
+        if (activeGame && !activeGame.result) {
+            return 'halftime';
+        }
+        // Check for post-game: most recent game has a result
+        var season = SQT.Storage.getActiveSeason();
+        if (season) {
+            var games = SQT.Storage.getGamesBySeason(season.id);
+            if (games.length > 0) {
+                var latest = games[games.length - 1];
+                if (latest.result) {
+                    return 'postgame';
+                }
+            }
+        }
+        return 'season';
+    },
+
+    _renderChips: function() {
+        var container = document.getElementById('assistant-chips');
+        container.innerHTML = '';
+        var context = this._getChipContext();
+        var chips = this._chips[context] || this._chips.season;
+        var self = this;
+
+        for (var i = 0; i < chips.length; i++) {
+            (function(chip) {
+                var btn = document.createElement('button');
+                btn.className = 'assistant-chip' + (chip.featured ? ' featured' : '');
+                btn.textContent = chip.icon + ' ' + chip.label;
+                btn.addEventListener('click', function() {
+                    self._sendChipPrompt(chip.prompt);
+                });
+                container.appendChild(btn);
+            })(chips[i]);
+        }
+    },
+
+    _sendChipPrompt: function(prompt) {
+        if (this._currentRequest) return; // Already streaming
+        var input = document.getElementById('assistant-input');
+        input.value = prompt;
+        this._sendMessage();
     },
 
     // ---- Messaging ----
