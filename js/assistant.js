@@ -355,14 +355,19 @@ SQT.Assistant = {
         if (activeGame && !activeGame.result) {
             return 'halftime';
         }
-        // Check for post-game: most recent game has a result
+        // Check for post-game: most recent game ended within 24 hours
         var season = SQT.Storage.getActiveSeason();
         if (season) {
             var games = SQT.Storage.getGamesBySeason(season.id);
             if (games.length > 0) {
                 var latest = games[games.length - 1];
-                if (latest.result) {
-                    return 'postgame';
+                if (latest.result && latest.date) {
+                    var gameDate = new Date(latest.date);
+                    var now = new Date();
+                    var hoursSince = (now - gameDate) / (1000 * 60 * 60);
+                    if (hoursSince < 24) {
+                        return 'postgame';
+                    }
                 }
             }
         }
