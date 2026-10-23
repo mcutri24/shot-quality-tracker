@@ -30,6 +30,50 @@
     display: none;
 }
 
+/* --- Quick Action Chips --- */
+.assistant-chips {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.assistant-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.assistant-chip {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 16px;
+    font-size: 11px;
+    white-space: nowrap;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.assistant-chip:active {
+    background: var(--bg-input);
+    color: var(--text-primary);
+}
+
+.assistant-chip.featured {
+    background: linear-gradient(135deg, #c41230, #a01028);
+    color: #fff;
+    border: none;
+}
+
+.assistant-chip.featured:active {
+    background: linear-gradient(135deg, #a01028, #800c1e);
+    color: #fff;
+}
+
 /* --- Backdrop --- */
 .assistant-backdrop {
     position: fixed;
