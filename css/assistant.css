@@ -234,6 +234,35 @@
     color: var(--text-primary);
 }
 
+/* --- Action Buttons Row (Copy + Share) --- */
+.assistant-action-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.assistant-action-btns .assistant-copy-btn,
+.assistant-action-btns .assistant-share-btn {
+    margin-top: 0;
+}
+
+.assistant-share-btn {
+    display: block;
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.assistant-share-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
 /* --- Typing Indicator --- */
 .assistant-typing {
     align-self: flex-start;
