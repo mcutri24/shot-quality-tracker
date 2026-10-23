@@ -21,7 +21,8 @@ var ASSETS = [
     './js/assistant-context.js',
     './js/assistant-api.js',
     './js/assistant.js',
-    './lib/chart.min.js'
+    './lib/chart.min.js',
+    './lib/html2canvas.min.js'
 ];
 
 self.addEventListener('install', function(e) {
